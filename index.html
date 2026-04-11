@@ -4,7 +4,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>اي ام سبيشل</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -90,6 +90,8 @@ body {
   background: var(--white);
   border-bottom: 1px solid var(--border);
   box-shadow: var(--ss);
+  overflow-x: auto;
+  white-space: nowrap;
 }
 .tab-btn {
   background: transparent;
@@ -250,7 +252,7 @@ body {
 
 /* TOAST */
 .toast {
-  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
   color: #fff; padding: 12px 24px; border-radius: 100px; font-weight: 700; font-size: 14px;
   box-shadow: var(--sm); z-index: 3000; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   background: var(--text); backdrop-filter: blur(8px);
@@ -297,12 +299,12 @@ body {
 .dv { font-size: 13px; font-weight: 700; color: var(--text); }
 .dnotes { background: var(--ambl); border-left: 3px solid var(--amber); border-radius: 8px; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #925c0e; line-height: 1.7; margin-bottom: 12px; }
 
-/* REFINED TAG ROWS */
+/* REFINED TAG ROWS - ALLOW WRAPPING FOR MOBILE */
 .trow { display: flex; flex-direction: column; gap: 0; background: var(--white); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-.tline { display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; max-width: 100%; border-bottom: 1px solid var(--border); background: var(--border); }
+.tline { display: flex; flex-wrap: wrap; gap: 1px; width: 100%; border-bottom: 1px solid var(--border); background: var(--border); }
 .tline:last-child { border-bottom: none; }
 .tline .ob {
-  flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1 1 auto; min-width: 70px; white-space: normal;
   text-align: center; transition: all 0.2s ease; cursor: pointer; font-family: 'Cairo', sans-serif; font-weight: 700;
   border-radius: 0; font-size: 13px; border: none; padding: 10px 6px; background: var(--white);
 }
@@ -331,7 +333,7 @@ body {
 .crd .sval { color: var(--red); }   .crd .sb { background: var(--red); }
 
 .cr { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.ch { padding: 24px; }
+.ch { padding: 24px; overflow-x: auto; }
 .cht { font-family: 'Tajawal', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 
 /* MAINTENANCE BTN */
@@ -349,17 +351,26 @@ body {
   padding: 16px; font-size: 14px; line-height: 2; color: var(--text); font-weight: 600;
 }
 .summ-box.open { display: block; animation: fadeIn 0.3s ease; }
-.cc-act-row button { border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; background: var(--white); transition: 0.2s; }
+.cc-act-row button { border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; background: var(--white); transition: 0.2s; margin-bottom: 4px;}
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
+/* RESPONSIVE IPHONE */
 @media(max-width:900px){
   .hdr, .tabs-nav, .tab-content { padding-right: 16px; padding-left: 16px; }
   .frow, .frow.t3, .sg, .cr { grid-template-columns: 1fr; }
   .dgrid { grid-template-columns: 1fr 1fr; }
+  .sg { grid-template-columns: 1fr 1fr; }
+  
+  /* Make sure inputs overlay nicely on mobile */
+  .fc .arow { flex-wrap: wrap; }
+}
+@media(max-width:400px){
+  .sg { grid-template-columns: 1fr; }
+  .dgrid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -386,23 +397,25 @@ body {
   <button class="tab-btn active" data-tab="form" onclick="switchTab('form',this)">تسجيل مكالمة</button>
   <button class="tab-btn" data-tab="log" onclick="switchTab('log',this)">سجل المكالمات <span id="logBadge" style="display:none" class="cbadge">0</span></button>
   <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics',this)">التحليلات</button>
-  
-  <button class="tab-btn" style="color: var(--red); margin-right: auto; font-weight: 800; border-right: 1px solid var(--border); border-radius: 0; padding-right: 20px;" onclick="window.open('complaints.html', '_blank')">
-     ↗
-  </button>
 </nav>
 
 <div class="tab-content active" id="tab-form">
   <div class="fc">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:nowrap;position:relative;">
-      <span id="seqLabel" style="font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
-      <input type="date" id="datePicker" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;" onchange="onDatePick(this.value)" />
-      <input type="time" id="timePicker" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;" onchange="onTimePick(this.value)" />
-      <input type="date" id="defaultDatePicker" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;" onchange="onDefaultDatePick(this.value)" />
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;position:relative;">
+      <span id="seqLabel" style="font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
       <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:8px 12px;"><span style="font-size:15px;line-height:1;">⚙️</span></button>
       <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:8px 16px;">الأوسمة</button>
-      <button id="dateBtn" onclick="openDatePicker()" class="ob" style="padding:8px 16px;">التاريخ</button>
-      <button id="timeBtn" onclick="openTimePicker()" class="ob" style="padding:8px 16px;">الوقت</button>
+      
+      <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
+        <span id="dateBtnText">التاريخ</span>
+        <input type="date" id="datePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDatePick(this.value)" />
+      </button>
+      
+      <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
+        <span id="timeBtnText">الوقت</span>
+        <input type="time" id="timePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onTimePick(this.value)" />
+      </button>
+
       <button class="btn-s" onclick="clearForm()" style="padding:8px 16px;">مسح</button>
       <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 24px;">حفظ</button>
     </div>
@@ -410,7 +423,12 @@ body {
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <span style="font-size:13px;font-weight:800;color:var(--teal);">⚙️ تاريخ ثابت</span>
         <span id="fixedDateDisplay" style="font-size:14px;font-weight:800;color:var(--text);flex:1;min-width:60px;">—</span>
-        <button onclick="openDefaultDatePicker()" class="btn-p" style="padding:8px 16px; font-size:12px;">تعديل</button>
+        
+        <button class="btn-p" style="position:relative; padding:8px 16px; font-size:12px; overflow:hidden;">
+            <span>تعديل</span>
+            <input type="date" id="defaultDatePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDefaultDatePick(this.value)" />
+        </button>
+        
         <button id="resetDefaultDateBtn" onclick="resetDefaultDate()" class="btn-s" style="padding:8px 16px; font-size:12px; color:var(--teal); border-color:var(--teal);">إزالة ↺</button>
       </div>
     </div>
@@ -508,10 +526,12 @@ body {
 
 <div class="tab-content" id="tab-analytics">
   <div class="sc" style="margin-bottom:24px; padding:16px 20px;">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <input type="text" id="analyticsSearch" placeholder="اكتب وسم للتصفية ..." onkeydown="if(event.key==='Enter') addAnalyticsTag()" class="fi" style="flex:1; padding:10px 16px;" />
-      <button onclick="addAnalyticsTag()" class="btn-p" style="padding:10px 24px;">تصفية</button>
-      <button onclick="clearFilters()" class="btn-s" style="padding:10px 20px;">مسح</button>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="text" id="analyticsSearch" placeholder="اكتب وسم للتصفية ..." onkeydown="if(event.key==='Enter') addAnalyticsTag()" class="fi" style="flex:1; min-width: 200px; padding:10px 16px;" />
+      <div style="display:flex; gap:8px;">
+          <button onclick="addAnalyticsTag()" class="btn-p" style="padding:10px 24px;">تصفية</button>
+          <button onclick="clearFilters()" class="btn-s" style="padding:10px 20px;">مسح</button>
+      </div>
     </div>
     <div id="filterTagsRow" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>
     <div id="suggestedTagsRow" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;"></div>
@@ -579,8 +599,8 @@ body {
 <div class="toast" id="toast"></div>
 
 <div id="post-save-modal" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:var(--white); border-radius:24px; padding:24px; width:100%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.15);">
-     <h3 style="margin-bottom:16px; font-family:'Tajawal', sans-serif; font-size:18px; font-weight:800; color:var(--text); border-bottom: 2px solid var(--al); padding-bottom: 8px;">تم حفظ <span id="ps-type" style="color:var(--accent);"></span> بنجاح</h3>
+  <div style="background:var(--white); border-radius:24px; padding:24px; width:100%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
+     <h3 style="margin-bottom:16px; font-family:'Tajawal', sans-serif; font-size:18px; font-weight:800; color:var(--text); border-bottom: 2px solid var(--al); padding-bottom: 8px;">إجراء سريع لـ <span id="ps-type" style="color:var(--accent);"></span></h3>
      <div id="ps-summary" style="margin-bottom:16px; font-size:13px; color:var(--text); line-height:1.8; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;"></div>
 
      <div style="margin-bottom:16px;">
@@ -809,14 +829,21 @@ function toggleDateSettings(){
   updateFixedDateDisplay();
 }
 function updateFixedDateDisplay(){ const lbl=document.getElementById('fixedDateDisplay'); if(lbl) lbl.textContent=defaultDate?fmtDate(defaultDate):'لم يتم تحديد تاريخ ثابت'; }
-function openDefaultDatePicker(){ const dp=document.getElementById('defaultDatePicker'); const base=defaultDate?new Date(defaultDate):new Date(); dp.value=base.toLocaleDateString('en-CA'); dp.style.cssText='position:fixed;top:50%;left:50%;opacity:0;pointer-events:auto;width:1px;height:1px;'; dp.showPicker?dp.showPicker():dp.click(); }
 function onDefaultDatePick(v){ if(!v) return; const [y,m,d]=v.split('-').map(Number); const nd=new Date(); nd.setFullYear(y,m-1,d); defaultDate=nd; callDT=null; touchDT(); updateDefaultDateUI(); updateFixedDateDisplay(); const gear=document.getElementById('dateSettingsBtn'); if(gear) gear.style.color='var(--amber)'; }
 function resetDefaultDate(){ defaultDate=null; callDT=null; updateDefaultDateUI(); updateFixedDateDisplay(); updateSeqLabel(); const gear=document.getElementById('dateSettingsBtn'); if(gear){ gear.style.borderColor='var(--border)'; gear.style.color='var(--t2)'; gear.style.background='var(--white)'; } }
-function updateDefaultDateUI(){ const db=document.getElementById('dateBtn'); if(defaultDate){ if(db) db.textContent=callDT?fmtDate(callDT):fmtDate(defaultDate); } else { if(db && !callDT) db.textContent='التاريخ'; } updateSeqLabel(); }
+function updateDefaultDateUI(){ const db=document.getElementById('dateBtnText'); if(defaultDate){ if(db) db.textContent=callDT?fmtDate(callDT):fmtDate(defaultDate); } else { if(db && !callDT) db.textContent='التاريخ'; } updateSeqLabel(); }
 function updateSeqLabel(){ const lbl=document.getElementById('seqLabel'); if(lbl) lbl.textContent='تسلسل '+(editSeq!==null?editSeq:buildSeq(callDT||new Date())); }
-function updateDTBtns(){ if(!callDT) return; const db=document.getElementById('dateBtn'); const tb=document.getElementById('timeBtn'); if(db) db.textContent=fmtDate(callDT); if(tb) tb.textContent=fmtTime(callDT); const dp=document.getElementById('datePicker'); const tp=document.getElementById('timePicker'); if(dp) dp.value=callDT.toLocaleDateString('en-CA'); if(tp){ const hh=String(callDT.getHours()).padStart(2,'0'),mm=String(callDT.getMinutes()).padStart(2,'0'); tp.value=hh+':'+mm; } }
-function openDatePicker(){ if(!callDT){ callDT=new Date(); } const dp=document.getElementById('datePicker'); dp.value=callDT.toLocaleDateString('en-CA'); dp.style.cssText='position:fixed;top:50%;left:50%;opacity:0;pointer-events:auto;width:1px;height:1px;'; dp.showPicker ? dp.showPicker() : dp.click(); }
-function openTimePicker(){ if(!callDT){ callDT=new Date(); } const tp=document.getElementById('timePicker'); const hh=String(callDT.getHours()).padStart(2,'0'),mm=String(callDT.getMinutes()).padStart(2,'0'); tp.value=hh+':'+mm; tp.style.cssText='position:fixed;top:50%;left:50%;opacity:0;pointer-events:auto;width:1px;height:1px;'; tp.showPicker ? tp.showPicker() : tp.click(); }
+function updateDTBtns(){ 
+  if(!callDT) return; 
+  const db=document.getElementById('dateBtnText'); 
+  const tb=document.getElementById('timeBtnText'); 
+  if(db) db.textContent=fmtDate(callDT); 
+  if(tb) tb.textContent=fmtTime(callDT); 
+  const dp=document.getElementById('datePicker'); 
+  const tp=document.getElementById('timePicker'); 
+  if(dp) dp.value=callDT.toLocaleDateString('en-CA'); 
+  if(tp){ const hh=String(callDT.getHours()).padStart(2,'0'),mm=String(callDT.getMinutes()).padStart(2,'0'); tp.value=hh+':'+mm; } 
+}
 function onDatePick(v){ if(!v) return; if(!callDT) callDT=new Date(); const [y,m,d]=v.split('-').map(Number); callDT.setFullYear(y,m-1,d); updateDTBtns(); }
 function onTimePick(v){ if(!v) return; if(!callDT) callDT=new Date(); const [h,m]=v.split(':').map(Number); callDT.setHours(h,m,0,0); updateDTBtns(); }
 
@@ -854,7 +881,10 @@ function updateDimRows(){ const isComp=sel.ctype==='شكوى'; ['tl-child','tl-l
 // ===== SUBMIT & DELETE =====
 async function submitCall(){
   const phone=document.getElementById('phone').value.trim();
-  if(!isSaudiPhone(phone)) return toast('أدخل رقم جوال سعودي صحيح (05XXXXXXXX)','err');
+  
+  if (editSeq === null && !isSaudiPhone(phone)) return toast('أدخل رقم جوال سعودي صحيح (05XXXXXXXX)','err');
+  if (editSeq !== null && phone === '') return toast('الرجاء إدخال رقم الجوال','err');
+  
   if(!sel.ctype)   return toast('الرجاء اختيار نوع المكالمة','err');
   if(sel.topics.length === 0) return toast('الرجاء اختيار موضوع المكالمة','err');
   if(!callDT) callDT=new Date();
@@ -881,18 +911,14 @@ async function submitCall(){
       const logBtn=document.querySelector('[data-tab="log"]'); switchTab('log',logBtn);
       requestAnimationFrame(()=>{ const card=document.getElementById('dtl-'+savedSeq); if(card){ if(!card.classList.contains('open')) togCard(savedSeq); const el=card.closest('.cc'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); } } });
       
-      if(rec.ctype === 'شكوى' || rec.ctype === 'طلب') {
-          showPostSaveModal(rec);
-      }
+      showPostSaveModal(rec);
     } else {
       calls.unshift(rec);
       renderLog(); updateBadge(); clearForm();
       if(tagsPanelOpen){ toggleTagsPanel(); }
       toast('تم حفظ المكالمة','ok');
       
-      if(rec.ctype === 'شكوى' || rec.ctype === 'طلب') {
-          showPostSaveModal(rec);
-      }
+      showPostSaveModal(rec);
     }
   } catch(err) {
     toast('حدث خطأ أثناء حفظ المكالمة في قاعدة البيانات', 'err');
@@ -925,7 +951,7 @@ function clearForm(){
   ['phone','compNo','reqNo','details'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('custNotice').style.display='none'; document.getElementById('condComp').style.display='none'; document.getElementById('condReq').style.display='none';
   Object.keys(sel).forEach(k=>{ sel[k]=k==='topics'?[]:'' }); callDT=null;
-  if(defaultDate){ touchDT(); } else { updateSeqLabel(); updateDTBtns(); document.getElementById('dateBtn').textContent='التاريخ'; document.getElementById('timeBtn').textContent='الوقت'; }
+  if(defaultDate){ touchDT(); } else { updateSeqLabel(); updateDTBtns(); document.getElementById('dateBtnText').textContent='التاريخ'; document.getElementById('timeBtnText').textContent='الوقت'; }
   renderAllGroups(); document.querySelectorAll('[data-group="gender"],[data-group="ctype"],[data-group="child"]').forEach(b=>b.classList.remove('sel')); updateTagsBtnIndicator();
 }
 
@@ -940,8 +966,13 @@ function editCall(seq){
   const formBtn=document.querySelector('[data-tab="form"]'); switchTab('form',formBtn); window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ===== POST SAVE MODAL (شكوى / طلب) =====
+// ===== POST SAVE MODAL (إجراء سريع) =====
 let psCallRecord = null;
+function showPostSaveModalBySeq(seq) {
+    const c = calls.find(x => x.seq === seq);
+    if(c) showPostSaveModal(c);
+}
+
 function showPostSaveModal(rec) {
     psCallRecord = rec;
     document.getElementById('ps-type').textContent = rec.ctype;
@@ -964,10 +995,9 @@ function addPSChildInput() {
     container.appendChild(input);
 }
 
-function getPSChildNames() {
+function getPSChildNamesList() {
     const inputs = document.querySelectorAll('.child-name-input');
-    const names = Array.from(inputs).map(inp => inp.value.trim()).filter(n => n !== '');
-    return names.join(' و ');
+    return Array.from(inputs).map(inp => inp.value.trim()).filter(n => n !== '');
 }
 
 function psNotifyAdmin() { if(psCallRecord) notifyAdmin(psCallRecord.seq); }
@@ -975,18 +1005,40 @@ function psNotifyBranch() { if(psCallRecord) notifyBranch(psCallRecord.seq); }
 function psSendFollowUp() { if(psCallRecord) sendFollowUp(psCallRecord.seq); }
 
 function psRedirect1() {
-    const names = getPSChildNames();
-    if(!names) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
+    const names = getPSChildNamesList();
+    if(names.length === 0) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
     if(!psCallRecord.branch || !S.branchPhones[psCallRecord.branch]) { toast('لم يتم إضافة رقم هذا الفرع', 'err'); return; }
-    const msg = `السلام عليكم ، ابي اتطمن على الاطفال ${names}`;
+    
+    const clientTitle = (psCallRecord.gender === 'أنثى') ? 'أم' : 'أبو';
+    const firstChild = names[0];
+    const childWord = names.length > 1 ? 'أطفالكم' : 'طفلكم';
+    const namesStr = names.join(' و ');
+
+    let custPhone = psCallRecord.phone.replace(/\D/g,'');
+    if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
+    const custWaLink = `https://wa.me/${custPhone}`;
+
+    const msg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}\n\nرابط محادثة العميل:\n${custWaLink}`;
+
     waLink(S.branchPhones[psCallRecord.branch], msg);
 }
 
 function psRedirect2() {
-    const names = getPSChildNames();
-    if(!names) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
+    const names = getPSChildNamesList();
+    if(names.length === 0) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
     if(!psCallRecord.branch || !S.branchPhones[psCallRecord.branch]) { toast('لم يتم إضافة رقم هذا الفرع', 'err'); return; }
-    const msg = `السلام عليكم ،ابي اتطمن على الاطفال ${names} وابي تطلبون من العاملة تنتبه للجوال.`;
+    
+    const clientTitle = (psCallRecord.gender === 'أنثى') ? 'أم' : 'أبو';
+    const firstChild = names[0];
+    const childWord = names.length > 1 ? 'أطفالكم' : 'طفلكم';
+    const namesStr = names.join(' و ');
+
+    let custPhone = psCallRecord.phone.replace(/\D/g,'');
+    if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
+    const custWaLink = `https://wa.me/${custPhone}`;
+
+    const msg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr} ونرجو من العاملة الانتباه للجوال.\n\nرابط محادثة العميل:\n${custWaLink}`;
+
     waLink(S.branchPhones[psCallRecord.branch], msg);
 }
 
@@ -1042,6 +1094,7 @@ function callCard(c, nested){
       <button onclick="event.stopPropagation();notifyAdmin('${c.seq}')" style="color:var(--accent); border:1px solid var(--al);">الإدارة</button>
       <button onclick="event.stopPropagation();notifyBranch('${c.seq}')" style="color:var(--amber); border:1px solid var(--ambl);">الفرع</button>
       <button onclick="event.stopPropagation();sendFollowUp('${c.seq}')" style="color:var(--green); border:1px solid var(--gl);">العميل</button>
+      <button onclick="event.stopPropagation();showPostSaveModalBySeq('${c.seq}')" style="color:var(--teal); border:1px solid var(--tl);">إجراء سريع</button>
       <button id="summBtn-${c.seq}" onclick="event.stopPropagation();toggleSummDetail('${c.seq}')" style="color:var(--text); border:1px solid var(--border);">ملخص</button>
       <button onclick="event.stopPropagation();editCall('${c.seq}')" style="color:var(--t2); border:1px solid var(--border);">تعديل</button>
       <button onclick="event.stopPropagation();deleteCall('${c.seq}')" style="color:var(--red); border:1px solid var(--rl); margin-right:auto;">حذف</button>
