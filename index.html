@@ -1016,11 +1016,14 @@ function psRedirect1() {
 
     let custPhone = psCallRecord.phone.replace(/\D/g,'');
     if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
-    const custWaLink = `https://wa.me/${custPhone}`;
+    
+    // إدراج رسالة العميل داخل رابط wa.me
+    const custMsg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}`;
+    const branchClickLink = `https://wa.me/${custPhone}?text=${encodeURIComponent(custMsg)}`;
 
-    const msg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}\n\nرابط محادثة العميل:\n${custWaLink}`;
+    const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الضغط على الرابط التالي (سيقوم الرابط بفتح المحادثة مع العميل وإدراج رسالة جاهزة للإرسال):\n\n${branchClickLink}`;
 
-    waLink(S.branchPhones[psCallRecord.branch], msg);
+    waLink(S.branchPhones[psCallRecord.branch], msgToBranch);
 }
 
 function psRedirect2() {
@@ -1035,11 +1038,14 @@ function psRedirect2() {
 
     let custPhone = psCallRecord.phone.replace(/\D/g,'');
     if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
-    const custWaLink = `https://wa.me/${custPhone}`;
+    
+    // إدراج رسالة العميل داخل رابط wa.me
+    const custMsg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}`;
+    const branchClickLink = `https://wa.me/${custPhone}?text=${encodeURIComponent(custMsg)}`;
 
-    const msg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr} ونرجو من العاملة الانتباه للجوال.\n\nرابط محادثة العميل:\n${custWaLink}`;
+    const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الرابط التالي، ونرجو من العاملة الانتباه للجوال:\n\n${branchClickLink}`;
 
-    waLink(S.branchPhones[psCallRecord.branch], msg);
+    waLink(S.branchPhones[psCallRecord.branch], msgToBranch);
 }
 
 // ===== LOG =====
@@ -1069,7 +1075,17 @@ function renderLog(subset){
       const pcs=phMap[ph]; const latestDay=fmtDate(new Date(Math.max(...pcs.map(x=>x.dt))));
       if(pcs.length===1){ html+=callCard(pcs[0],false); } else { html+=`<div class="cust-block"><div class="cust-hdr"><span class="cust-ph">${ph}</span> · ${pcs.length} مكالمات · آخرها ${latestDay}</div>`; pcs.forEach(c=>{ html+=callCard(c,true); }); html+='</div>'; }
     });
-  } else { sorted.forEach(c=>{ html+=callCard(c,false); }); }
+  } else { 
+    let currentDay = '';
+    sorted.forEach(c=>{ 
+      let dayStr = fmtDate(c.dt);
+      if (currentDay !== dayStr) {
+          currentDay = dayStr;
+          html += `<div style="font-family:'Tajawal', sans-serif; font-size:16px; font-weight:800; color:var(--accent); margin: 24px 0 12px 0; border-bottom: 2px solid var(--border); padding-bottom: 8px;">(${dayStr})</div>`;
+      }
+      html+=callCard(c,false); 
+    }); 
+  }
   wrap.innerHTML=html;
 }
 
@@ -1080,7 +1096,7 @@ function cardSummary(c){
 }
 
 function callCard(c, nested){
-  const sa=nested?'':' standalone'; const fields=[{l:'جوال العميل',v:c.phone},{l:'الجنس',v:c.gender},{l:'اللكنة',v:c.nat},{l:'الفرع',v:c.branch},{l:'الموقع',v:c.loc},{l:'عدد الأطفال',v:c.child||'—'},{l:'نبرة العميل',v:c.emo||'—'},{l:'المصدر',v:c.src||'—'},{l:'الموضوع',v:c.topic||'—'},...(c.compNo?[{l:'رقم الشكوى',v:c.compNo}]:[]),...(c.reqNo?[{l:'رقم الطلب',v:c.reqNo}]:[])];
+  const sa=nested?'':' standalone'; const fields=[{l:'تاريخ المكالمة',v:`(${fmtDate(c.dt)})`},{l:'جوال العميل',v:c.phone},{l:'الجنس',v:c.gender},{l:'اللكنة',v:c.nat},{l:'الفرع',v:c.branch},{l:'الموقع',v:c.loc},{l:'عدد الأطفال',v:c.child||'—'},{l:'نبرة العميل',v:c.emo||'—'},{l:'المصدر',v:c.src||'—'},{l:'الموضوع',v:c.topic||'—'},...(c.compNo?[{l:'رقم الشكوى',v:c.compNo}]:[]),...(c.reqNo?[{l:'رقم الطلب',v:c.reqNo}]:[])];
   const seqCls=c.ctype==='شكوى'?'ct-complaint':c.ctype==='طلب'?'ct-request':'ct-inquiry';
   return `
   <div class="cc${sa}">
@@ -1089,8 +1105,6 @@ function callCard(c, nested){
       <span class="cc-summary">${cardSummary(c)}</span><span class="cc-tog" id="tog-${c.seq}" style="font-size:18px;font-weight:300;">＋</span>
     </div>
     <div class="cc-act-row" id="act-${c.seq}" style="display:none;padding:8px 18px;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:#f8fafc;">
-      ${c.ctype === 'شكوى' ? `<button onclick="event.stopPropagation();showIMSDetails('${c.phone}', 'شكوى', '${c.compNo||''}')" style="color:#e11d48; border:1px solid #fecaca; font-weight:800; background:#fff1f2;">تفاصيل الشكوى </button>` : ''}
-      ${c.ctype === 'طلب' ? `<button onclick="event.stopPropagation();showIMSDetails('${c.phone}', 'طلب', '${c.reqNo||''}')" style="color:#0ea5e9; border:1px solid #bae6fd; font-weight:800; background:#f0f9ff;">تفاصيل الطلب </button>` : ''}
       <button onclick="event.stopPropagation();notifyAdmin('${c.seq}')" style="color:var(--accent); border:1px solid var(--al);">الإدارة</button>
       <button onclick="event.stopPropagation();notifyBranch('${c.seq}')" style="color:var(--amber); border:1px solid var(--ambl);">الفرع</button>
       <button onclick="event.stopPropagation();sendFollowUp('${c.seq}')" style="color:var(--green); border:1px solid var(--gl);">العميل</button>
@@ -1235,19 +1249,13 @@ function updateLineChart() {
     const grouped = {};
     sorted.forEach(c => {
         const k = getGroupKey(c.dt, scale);
-        if(!grouped[k]) grouped[k] = { 'شكوى':0, 'استفسار':0, 'طلب':0, total: 0 };
-        if(c.ctype) {
-            grouped[k][c.ctype] = (grouped[k][c.ctype] || 0) + 1;
-        }
+        if(!grouped[k]) grouped[k] = { total: 0 };
         grouped[k].total++;
     });
 
     const labels = Object.keys(grouped);
     const displayLabels = labels.map(k => formatGroupKey(k, scale));
-    
-    const dataComp = labels.map(k => grouped[k]['شكوى']);
-    const dataInq = labels.map(k => grouped[k]['استفسار']);
-    const dataReq = labels.map(k => grouped[k]['طلب']);
+    const dataTotal = labels.map(k => grouped[k].total);
 
     const ctx = document.getElementById('timelineChart').getContext('2d');
     
@@ -1259,28 +1267,12 @@ function updateLineChart() {
             labels: displayLabels,
             datasets: [
                 {
-                    label: 'شكاوى',
-                    data: dataComp,
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    tension: 0.3, fill: false, borderWidth: 2,
-                    pointRadius: 1, pointHoverRadius: 4
-                },
-                {
-                    label: 'استفسارات',
-                    data: dataInq,
+                    label: 'إجمالي النشاط',
+                    data: dataTotal,
                     borderColor: '#6366f1',
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    tension: 0.3, fill: false, borderWidth: 2,
-                    pointRadius: 1, pointHoverRadius: 4
-                },
-                {
-                    label: 'طلبات',
-                    data: dataReq,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.3, fill: false, borderWidth: 2,
-                    pointRadius: 1, pointHoverRadius: 4
+                    tension: 0.3, fill: true, borderWidth: 2,
+                    pointRadius: 2, pointHoverRadius: 5
                 }
             ]
         },
@@ -1494,7 +1486,9 @@ async function handleImport(event) {
         let d = new Date();
         try {
           if (typeof dateStr === 'number') {
-              d = new Date(Math.round((dateStr - 25569) * 86400 * 1000));
+              // استخراج التاريخ بتوقيت UTC لتجنب تغييرات المنطقة الزمنية
+              let utcDate = new Date(Math.round((dateStr - 25569) * 86400 * 1000));
+              d = new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate());
           } else if (dateStr) {
             if(dateStr.toString().includes('/')) {
                  const parsed = new Date(dateStr);
@@ -1515,9 +1509,9 @@ async function handleImport(event) {
                  }
             }
           }
-          if(timeStr) {
+          if(timeStr !== undefined && timeStr !== null) {
             if (typeof timeStr === 'number') {
-                let totalSeconds = Math.floor(timeStr * 86400);
+                let totalSeconds = Math.round(timeStr * 86400);
                 let h = Math.floor(totalSeconds / 3600);
                 let m = Math.floor((totalSeconds % 3600) / 60);
                 d.setHours(h, m, 0, 0);
@@ -1712,80 +1706,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     toast("حدث خطأ في تحميل البيانات المحفوظة", "err");
   }
 });
-
-// --- دالة عرض تفاصيل الشكاوى والطلبات من النظام المتقدم ---
-
-// 1. حقن نافذة منبثقة (Modal) في واجهة خدمة العملاء
-document.body.insertAdjacentHTML('beforeend', `
-<div id="cs-modal" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-    <div style="background:var(--white); border-radius:24px; padding:24px 32px; width:100%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.15); animation: fadeIn 0.3s ease;">
-        <h3 id="cs-modal-title" style="font-family:'Tajawal', sans-serif; font-size:18px; font-weight:800; margin-bottom:16px; color:var(--text); border-bottom: 2px solid var(--al); padding-bottom: 8px;"></h3>
-        <div id="cs-modal-body" style="margin-bottom:24px; font-size:14px; color:var(--t2); line-height:1.8;"></div>
-        <button class="btn-s" style="width:100%; padding:10px; border-radius:12px; font-weight:800;" onclick="document.getElementById('cs-modal').style.display='none'">إغلاق النافذة</button>
-    </div>
-</div>
-`);
-
-// 2. دالة جلب البيانات وعرضها
-function showIMSDetails(phone, type, refNo) {
-    let records = [];
-    let title = '';
-    
-    if(type === 'شكوى') {
-        records = JSON.parse(localStorage.getItem('ims_c') || '[]');
-        title = 'تفاصيل الشكوى  ';
-    } else {
-        records = JSON.parse(localStorage.getItem('ims_r') || '[]');
-        title = 'تفاصيل الطلب  ';
-    }
-
-    let cleanPhone = phone.replace(/\D/g, '');
-    let match = null;
-    
-    if(refNo) match = records.find(r => r.ref === refNo);
-    
-    if(!match) {
-        let userRecords = records.filter(r => r.mobile && r.mobile.replace(/\D/g, '') === cleanPhone);
-        if(userRecords.length > 0) match = userRecords[0]; 
-    }
-
-    if(!match) {
-        toast('لم يتم العثور على تفاصيل مسجلة لهذا العميل في نظام الشكاوى ', 'err');
-        return;
-    }
-
-    let summaryHTML = '';
-    if(type === 'شكوى') {
-        summaryHTML = `
-            <div style="background:#f8fafc; padding:16px; border-radius:12px; border:1px solid #e2e8f0;">
-                <p style="margin-bottom:8px;"><strong>رقم الشكوى:</strong> <span style="color:var(--accent); font-weight:800; font-family:monospace; font-size:15px;">${match.ref}</span></p>
-                <p style="margin-bottom:8px;"><strong>العميل:</strong> ${match.client} <span style="color:var(--tl2)">(الطفل: ${match.child})</span></p>
-                <p style="margin-bottom:8px;"><strong>الفرع:</strong> ${match.branch}</p>
-                <p style="margin-bottom:8px;"><strong>حالة الشكوى:</strong> <span style="background:var(--al); color:var(--accent); padding:4px 10px; border-radius:12px; font-weight:bold; font-size:12px;">${match.status}</span></p>
-                <hr style="border:none; border-top:1px dashed #cbd5e1; margin:16px 0;">
-                <p style="margin-bottom:8px;"><strong>الوصف:</strong> <br><span style="color:var(--text); font-weight:600;">${match.desc}</span></p>
-                <p style="margin-bottom:8px;"><strong>المطلب:</strong> <br><span style="color:var(--text); font-weight:600;">${match.demand}</span></p>
-                ${match.branchComment ? `<hr style="border:none; border-top:1px dashed #cbd5e1; margin:16px 0;"><p style="color:#b45309; margin-bottom:8px;"><strong>إفادة مديرة الفرع:</strong> <br>${match.branchComment}</p>` : ''}
-                ${match.adminComment ? `<p style="color:#047857; margin-bottom:8px;"><strong>توضيح الإدارة:</strong> <br>${match.adminComment}</p>` : ''}
-            </div>
-        `;
-    } else {
-         summaryHTML = `
-            <div style="background:#f8fafc; padding:16px; border-radius:12px; border:1px solid #e2e8f0;">
-                <p style="margin-bottom:8px;"><strong>رقم الطلب:</strong> <span style="color:#0ea5e9; font-weight:800; font-family:monospace; font-size:15px;">${match.ref}</span></p>
-                <p style="margin-bottom:8px;"><strong>العميل:</strong> ${match.client}</p>
-                <p style="margin-bottom:8px;"><strong>الفرع:</strong> ${match.branch}</p>
-                <p style="margin-bottom:8px;"><strong>حالة الطلب:</strong> <span style="background:#e0f2fe; color:#0ea5e9; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:12px;">${match.status}</span></p>
-                <hr style="border:none; border-top:1px dashed #cbd5e1; margin:16px 0;">
-                <p style="margin-bottom:8px;"><strong>وصف الطلب:</strong> <br><span style="color:var(--text); font-weight:600;">${match.desc}</span></p>
-            </div>
-        `;
-    }
-
-    document.getElementById('cs-modal-title').textContent = title;
-    document.getElementById('cs-modal-body').innerHTML = summaryHTML;
-    document.getElementById('cs-modal').style.display = 'flex';
-}
 </script>
 </body>
 </html>
