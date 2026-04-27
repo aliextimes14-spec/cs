@@ -3,17 +3,51 @@
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ===== FIREBASE CONFIG =====
+  // ضع هنا إعدادات مشروع Firebase الخاص بك
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const firestore = getFirestore(app);
+
+  // ربط الدوال بالـ window لاستخدامها خارج الـ module
+  window._fsCollection = (name) => collection(firestore, name);
+  window._fsDoc = (colRef, id) => doc(colRef, id);
+  window._fsSetDoc = setDoc;
+  window._fsGetDoc = getDoc;
+  window._fsGetDocs = getDocs;
+  window._fsDeleteDoc = deleteDoc;
+  window._fsQuery = query;
+  window._fsOrderBy = orderBy;
+  window._firestoreReady = true;
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    // الانتظار حتى يصبح Firestore جاهزاً
+    await window.initAppAfterFirebase();
+  });
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>اي ام سبيشل</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* ألوان عصرية هادئة */
   --bg: #f8fafc;
   --white: #ffffff;
   --border: #e2e8f0;
-  --accent: #6366f1; /* Indigo 500 */
+  --accent: #6366f1;
   --accent-hover: #4f46e5;
   --al: #e0e7ff; 
   --green: #10b981; --gl: #d1fae5;
@@ -22,13 +56,12 @@
   --purple: #8b5cf6; --pl: #ede9fe;
   --pink: #ec4899; --pkl: #fce7f3;
   --teal: #06b6d4; --tl: #cffafe;
-  --text: #0f172a; /* Slate 900 */
-  --t2: #475569; /* Slate 600 */
-  --tl2: #94a3b8; /* Slate 400 */
+  --text: #0f172a;
+  --t2: #475569;
+  --tl2: #94a3b8;
   --r: 16px; 
   --r-btn: 12px;
   --r-input: 12px;
-  /* ظلال ناعمة */
   --ss: 0 1px 2px rgba(15, 23, 42, 0.04);
   --s: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
   --sm: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
@@ -46,7 +79,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* HEADER */
 .hdr {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
@@ -84,7 +116,16 @@ body {
   box-shadow: var(--ss);
 }
 
-/* TABS */
+/* Firebase status indicator */
+.fb-status {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 10px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--t2);
+}
+.fb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tl2); transition: background 0.3s; }
+.fb-dot.online { background: var(--green); }
+.fb-dot.error { background: var(--red); }
+
 .tabs-nav {
   display: flex; gap: 8px; padding: 16px 28px;
   background: var(--white);
@@ -123,12 +164,10 @@ body {
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
 }
 
-/* CONTENT */
 .tab-content { display: none; padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
 .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* FORM CARD */
 .fc, .sc, .ch, .cust-block, #textViewPanel {
   background: var(--white);
   border: 1px solid var(--border);
@@ -151,7 +190,6 @@ body {
 .fg { display: flex; flex-direction: column; gap: 8px; }
 .flbl { font-size: 13px; font-weight: 700; color: var(--t2); }
 
-/* INPUTS */
 .fi, .fta, .min {
   background: #f1f5f9;
   border: 1.5px solid transparent;
@@ -173,7 +211,6 @@ body {
 .fi::placeholder, .fta::placeholder { color: var(--tl2); font-weight: 500; }
 .fta { resize: vertical; min-height: 100px; line-height: 1.6; }
 
-/* OPTION BUTTONS */
 .bg { display: flex; flex-wrap: wrap; gap: 8px; }
 .ob {
   background: var(--white);
@@ -195,7 +232,6 @@ body {
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
 }
 
-/* ACTIONS */
 .arow { display: flex; gap: 10px; margin-top: 8px; }
 .btn-p {
   background: linear-gradient(135deg, var(--accent), var(--accent-hover));
@@ -226,7 +262,6 @@ body {
 }
 .btn-s:hover { border-color: var(--text); color: var(--text); background: var(--bg); }
 
-/* DROPDOWNS */
 .dropdown { position: relative; display: inline-block; }
 .dropdown-content { 
   display: none; position: absolute; background-color: var(--white); 
@@ -249,8 +284,6 @@ body {
 }
 .dropbtn:hover { border-color: var(--accent); color: var(--accent); }
 
-
-/* TOAST */
 .toast {
   position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
   color: #fff; padding: 12px 24px; border-radius: 100px; font-weight: 700; font-size: 14px;
@@ -261,7 +294,6 @@ body {
 .toast.err { background: var(--red); }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* LOG & ANALYTICS */
 .log-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .log-title { font-family: 'Tajawal', sans-serif; font-size: 18px; font-weight: 800; color: var(--text); }
 .select-sort {
@@ -272,7 +304,6 @@ body {
 }
 .select-sort:hover { border-color: var(--accent); color: var(--accent); }
 
-/* CUSTOMER CARDS */
 .cust-block { margin-bottom: 16px; }
 .cust-hdr {
   padding: 12px 18px; background: var(--bg); border-bottom: 1px solid var(--border);
@@ -299,7 +330,6 @@ body {
 .dv { font-size: 13px; font-weight: 700; color: var(--text); }
 .dnotes { background: var(--ambl); border-left: 3px solid var(--amber); border-radius: 8px; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #925c0e; line-height: 1.7; margin-bottom: 12px; }
 
-/* REFINED TAG ROWS - ALLOW WRAPPING FOR MOBILE */
 .trow { display: flex; flex-direction: column; gap: 0; background: var(--white); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
 .tline { display: flex; flex-wrap: wrap; gap: 1px; width: 100%; border-bottom: 1px solid var(--border); background: var(--border); }
 .tline:last-child { border-bottom: none; }
@@ -322,7 +352,6 @@ body {
 
 .tline.dim { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
 
-/* BADGES & ANALYTICS */
 .sg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
 .sc { padding: 24px; }
 .slbl { font-size: 13px; font-weight: 700; color: var(--t2); margin-bottom: 10px; }
@@ -336,7 +365,6 @@ body {
 .ch { padding: 24px; overflow-x: auto; }
 .cht { font-family: 'Tajawal', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 
-/* MAINTENANCE BTN */
 .btn-maint {
   position: fixed; bottom: 24px; left: 24px; background: var(--white); border: 1px solid var(--border);
   border-radius: 100px; padding: 10px 20px; font-family: 'Cairo', sans-serif; font-size: 14px;
@@ -345,7 +373,6 @@ body {
 }
 .btn-maint:hover { box-shadow: var(--sm); transform: translateY(-2px); color: var(--text); }
 
-/* MISC FIXES */
 .summ-box {
   display: none; margin-top: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
   padding: 16px; font-size: 14px; line-height: 2; color: var(--text); font-weight: 600;
@@ -353,19 +380,25 @@ body {
 .summ-box.open { display: block; animation: fadeIn 0.3s ease; }
 .cc-act-row button { border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; background: var(--white); transition: 0.2s; margin-bottom: 4px;}
 
+/* WhatsApp button style */
+.btn-wa {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #25D366; border: none; border-radius: 8px;
+  padding: 6px 14px; font-size: 12px; font-weight: 700;
+  color: #fff; cursor: pointer; transition: all 0.2s ease;
+}
+.btn-wa:hover { background: #1ebe5d; transform: scale(1.02); }
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* RESPONSIVE IPHONE */
 @media(max-width:900px){
   .hdr, .tabs-nav, .tab-content { padding-right: 16px; padding-left: 16px; }
   .frow, .frow.t3, .sg, .cr { grid-template-columns: 1fr; }
   .dgrid { grid-template-columns: 1fr 1fr; }
   .sg { grid-template-columns: 1fr 1fr; }
-  
-  /* Make sure inputs overlay nicely on mobile */
   .fc .arow { flex-wrap: wrap; }
 }
 @media(max-width:400px){
@@ -384,6 +417,10 @@ body {
     <span class="logo-txt">اي ام سبيشل</span>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
+    <div class="fb-status" id="fbStatus">
+      <div class="fb-dot" id="fbDot"></div>
+      <span id="fbStatusText">Firebase</span>
+    </div>
     <div class="hdr-clock" style="display:flex;align-items:center;gap:4px;padding:4px 12px;">
       <button onclick="changeFontSize(-1)" title="تصغير الخط" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:15px;font-weight:800;padding:4px;transition:color .2s;">−</button>
       <span id="fontSizeLabel" style="font-size:13px;color:var(--text);min-width:40px;text-align:center;">100%</span>
@@ -562,7 +599,6 @@ body {
     <div class="sc cbl"><div class="slbl">الاستفسارات</div><div class="sval" id="stInq">0</div><div class="sb"></div></div>
     <div class="sc cgr"><div class="slbl">الطلبات</div><div class="sval" id="stReq">0</div><div class="sb"></div></div>
   </div>
-  
 
   <div class="cr">
     <div class="ch"><div class="cht">عدد الأطفال</div><div id="chChild"><div class="ec">لا توجد بيانات</div></div></div>
@@ -598,9 +634,16 @@ body {
 
 <div class="toast" id="toast"></div>
 
+<!-- Post Save Modal (شاعر واتساب) -->
 <div id="post-save-modal" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:20px;">
   <div style="background:var(--white); border-radius:24px; padding:24px; width:100%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
-     <h3 style="margin-bottom:16px; font-family:'Tajawal', sans-serif; font-size:18px; font-weight:800; color:var(--text); border-bottom: 2px solid var(--al); padding-bottom: 8px;">إجراء سريع لـ <span id="ps-type" style="color:var(--accent);"></span></h3>
+     <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; border-bottom: 2px solid var(--al); padding-bottom: 12px;">
+       <!-- WhatsApp SVG Icon -->
+       <svg width="28" height="28" viewBox="0 0 24 24" fill="#25D366" xmlns="http://www.w3.org/2000/svg">
+         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+       </svg>
+       <h3 style="font-family:'Tajawal', sans-serif; font-size:18px; font-weight:800; color:var(--text);">شاعر واتساب — <span id="ps-type" style="color:#25D366;"></span></h3>
+     </div>
      <div id="ps-summary" style="margin-bottom:16px; font-size:13px; color:var(--text); line-height:1.8; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;"></div>
 
      <div style="margin-bottom:16px;">
@@ -612,9 +655,9 @@ body {
      </div>
 
      <div style="display:flex; flex-wrap:wrap; gap:8px; border-top:1px solid var(--border); padding-top:16px;">
-        <button onclick="psNotifyAdmin()" style="flex:1; color:var(--accent); border:1px solid var(--al); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer;">الإدارة</button>
-        <button onclick="psNotifyBranch()" style="flex:1; color:var(--amber); border:1px solid var(--ambl); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer;">الفرع</button>
-        <button onclick="psSendFollowUp()" style="flex:1; color:var(--green); border:1px solid var(--gl); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer;">العميل</button>
+        <button onclick="psNotifyAdmin()" style="flex:1; color:var(--accent); border:1px solid var(--al); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer; font-family:'Cairo';">الإدارة</button>
+        <button onclick="psNotifyBranch()" style="flex:1; color:var(--amber); border:1px solid var(--ambl); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer; font-family:'Cairo';">الفرع</button>
+        <button onclick="psSendFollowUp()" style="flex:1; color:var(--green); border:1px solid var(--gl); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer; font-family:'Cairo';">العميل</button>
      </div>
      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
         <button onclick="psRedirect1()" style="flex:1; color:#fff; background:var(--accent); border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-family:'Cairo';">توجيه (تطمن)</button>
@@ -626,10 +669,53 @@ body {
 </div>
 
 <script>
-// إعداد خط عام لـ Chart.js
 Chart.defaults.font.family = 'Cairo';
 
-// ===== DATABASES & LOCALSTORAGE =====
+// ===== FIREBASE HELPERS (will be set after module loads) =====
+let _fbReady = false;
+
+function setFBStatus(state) {
+  const dot = document.getElementById('fbDot');
+  const txt = document.getElementById('fbStatusText');
+  if (!dot || !txt) return;
+  dot.className = 'fb-dot ' + (state === 'online' ? 'online' : state === 'error' ? 'error' : '');
+  txt.textContent = state === 'online' ? 'متصل' : state === 'error' ? 'خطأ' : 'Firebase';
+}
+
+async function saveCallFirestore(rec) {
+  if (!window._firestoreReady) return;
+  try {
+    const col = window._fsCollection('calls');
+    const docRef = window._fsDoc(col, rec.seq);
+    const data = { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : rec.dt };
+    await window._fsSetDoc(docRef, data);
+  } catch(e) { console.error('Firestore save error:', e); }
+}
+
+async function deleteCallFirestore(seq) {
+  if (!window._firestoreReady) return;
+  try {
+    const col = window._fsCollection('calls');
+    const docRef = window._fsDoc(col, seq);
+    await window._fsDeleteDoc(docRef);
+  } catch(e) { console.error('Firestore delete error:', e); }
+}
+
+async function getAllCallsFirestore() {
+  if (!window._firestoreReady) return null;
+  try {
+    const col = window._fsCollection('calls');
+    const snapshot = await window._fsGetDocs(col);
+    const results = [];
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      results.push({ ...d, dt: new Date(d.dt) });
+    });
+    return results;
+  } catch(e) { console.error('Firestore read error:', e); setFBStatus('error'); return null; }
+}
+
+// ===== IndexedDB (local backup) =====
 const DB_NAME = 'CS_DB';
 const STORE_NAME = 'calls';
 let db;
@@ -686,9 +772,31 @@ const S_DEFAULT = {
   adminPhone: ''       
 };
 
-// تم تغيير اسم المفتاح لـ CS_Settings_v2 ليتم تطبيق القوائم الجديدة مباشرة بدلاً من القديمة
 let S = JSON.parse(localStorage.getItem('CS_Settings_v2')) || S_DEFAULT;
 function saveS() { localStorage.setItem('CS_Settings_v2', JSON.stringify(S)); }
+
+// ===== CHILD NAMES STORAGE =====
+// يتم حفظ أسماء الأطفال بالهيكل: { seq: [...names] }
+function getChildNames(seq) {
+  try {
+    const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}');
+    return all[seq] || [];
+  } catch(e) { return []; }
+}
+function saveChildNames(seq, names) {
+  try {
+    const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}');
+    all[seq] = names.filter(n => n && n.trim() !== '');
+    localStorage.setItem('CS_ChildNames', JSON.stringify(all));
+  } catch(e) {}
+}
+function deleteChildNames(seq) {
+  try {
+    const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}');
+    delete all[seq];
+    localStorage.setItem('CS_ChildNames', JSON.stringify(all));
+  } catch(e) {}
+}
 
 const CHILD_LABELS_DEF = {'طفل':'1','طفلين':'2','ثلاثة':'3','أربعة':'4','خمسة':'5','أكثر':'6+'};
 let defaultDate = null; 
@@ -701,7 +809,7 @@ let editSeq = null;
 let callDT = null;
 const sel = {gender:'',nat:'',branch:'',loc:'',src:'',topics:[],ctype:'',child:'',emo:''};
 
-// ===== TIME/DATE HELPER =====
+// ===== TIME/DATE =====
 function fmtTime(d){ let h=d.getHours(), m=String(d.getMinutes()).padStart(2,'0'); const ap=h>=12?'م':'ص'; h=h%12||12; return `${h}:${m} ${ap}`; }
 function fmtDate(d){ return `${d.getDate()} ${MONTHS[d.getMonth()]}`; }
 function fmtDT(d){ return `${fmtDate(d)}  ${fmtTime(d)}`; }
@@ -744,12 +852,10 @@ function rbg(elId, items, grp, clsFn){
 }
 function renderChildren(){
   const el=document.getElementById('childGroup'); if(!el) return;
-  const inTline=el.classList.contains('tline');
   el.innerHTML=CHILD_OPTS.map(item=>{
-    const cls=inTline?'':`t`;
     const lbl=S.labels[item]||CHILD_LABELS_DEF[item]||'';
     const display=lbl?lbl:item;
-    return `<button class="ob ${cls}${sel.child===item?' sel':''}" data-group="child" data-val="${item}" onclick="selectOpt(this,'child')" title="${item}">${display}</button>`;
+    return `<button class="ob${sel.child===item?' sel':''}" data-group="child" data-val="${item}" onclick="selectOpt(this,'child')" title="${item}">${display}</button>`;
   }).join('');
 }
 function renderAllGroups(){
@@ -833,26 +939,41 @@ function onDefaultDatePick(v){ if(!v) return; const [y,m,d]=v.split('-').map(Num
 function resetDefaultDate(){ defaultDate=null; callDT=null; updateDefaultDateUI(); updateFixedDateDisplay(); updateSeqLabel(); const gear=document.getElementById('dateSettingsBtn'); if(gear){ gear.style.borderColor='var(--border)'; gear.style.color='var(--t2)'; gear.style.background='var(--white)'; } }
 function updateDefaultDateUI(){ const db=document.getElementById('dateBtnText'); if(defaultDate){ if(db) db.textContent=callDT?fmtDate(callDT):fmtDate(defaultDate); } else { if(db && !callDT) db.textContent='التاريخ'; } updateSeqLabel(); }
 function updateSeqLabel(){ const lbl=document.getElementById('seqLabel'); if(lbl) lbl.textContent='تسلسل '+(editSeq!==null?editSeq:buildSeq(callDT||new Date())); }
+
 function updateDTBtns(){ 
   if(!callDT) return; 
-  const db=document.getElementById('dateBtnText'); 
+  const dbtn=document.getElementById('dateBtnText'); 
   const tb=document.getElementById('timeBtnText'); 
-  if(db) db.textContent=fmtDate(callDT); 
+  if(dbtn) dbtn.textContent=fmtDate(callDT); 
   if(tb) tb.textContent=fmtTime(callDT); 
   const dp=document.getElementById('datePicker'); 
   const tp=document.getElementById('timePicker'); 
   if(dp) dp.value=callDT.toLocaleDateString('en-CA'); 
   if(tp){ const hh=String(callDT.getHours()).padStart(2,'0'),mm=String(callDT.getMinutes()).padStart(2,'0'); tp.value=hh+':'+mm; } 
 }
-function onDatePick(v){ if(!v) return; if(!callDT) callDT=new Date(); const [y,m,d]=v.split('-').map(Number); callDT.setFullYear(y,m-1,d); updateDTBtns(); }
-function onTimePick(v){ if(!v) return; if(!callDT) callDT=new Date(); const [h,m]=v.split(':').map(Number); callDT.setHours(h,m,0,0); updateDTBtns(); }
 
-// ===== SELECT OPT & AUTO SAVE =====
+// ===== FIX: تحديث التاريخ والوقت فعلياً على callDT =====
+function onDatePick(v){ 
+  if(!v) return; 
+  if(!callDT) callDT=new Date(); 
+  const [y,m,d]=v.split('-').map(Number); 
+  callDT.setFullYear(y,m-1,d); 
+  updateDTBtns(); 
+  updateSeqLabel();
+}
+function onTimePick(v){ 
+  if(!v) return; 
+  if(!callDT) callDT=new Date(); 
+  const [h,m]=v.split(':').map(Number); 
+  callDT.setHours(h,m,0,0); 
+  updateDTBtns(); 
+}
+
+// ===== AUTO SAVE =====
 function checkAutoSave(isGenderTrigger = false) {
   const phone = document.getElementById('phone').value.trim();
   if (!isSaudiPhone(phone) || editSeq !== null) return;
   if (!sel.ctype || sel.topics.length === 0) return;
-
   if (isGenderTrigger) {
       if (sel.gender) { submitCall(); }
       return;
@@ -884,14 +1005,22 @@ async function submitCall(){
   
   if (editSeq === null && !isSaudiPhone(phone)) return toast('أدخل رقم جوال سعودي صحيح (05XXXXXXXX)','err');
   if (editSeq !== null && phone === '') return toast('الرجاء إدخال رقم الجوال','err');
-  
   if(!sel.ctype)   return toast('الرجاء اختيار نوع المكالمة','err');
   if(sel.topics.length === 0) return toast('الرجاء اختيار موضوع المكالمة','err');
   if(!callDT) callDT=new Date();
 
+  // عند التعديل: نحافظ على التسلسل والتاريخ الأصلي لكن نحدّث الوقت/التاريخ المُعدَّل
+  let recDT;
+  if(editSeq !== null) {
+    // استخدام callDT الجديد (الذي يحمل التاريخ والوقت المُعدَّلَين)
+    recDT = callDT;
+  } else {
+    recDT = callDT;
+  }
+
   const rec={
     seq:   editSeq!==null ? editSeq : nextSeq(callDT||new Date()),
-    dt:    editSeq!==null ? calls.find(c=>c.seq===editSeq).dt : callDT,
+    dt:    recDT,
     phone, gender:sel.gender, nat:sel.nat, branch:sel.branch, loc:sel.loc,
     src:sel.src, topic:sel.topics.join('، '), ctype:sel.ctype,
     compNo:sel.ctype==='شكوى'?(document.getElementById('compNo').value.trim()||''):'',
@@ -901,6 +1030,8 @@ async function submitCall(){
 
   try {
     await saveCallDB(rec);
+    // حفظ في Firestore أيضاً
+    await saveCallFirestore(rec);
 
     if(editSeq!==null){
       const idx=calls.findIndex(c=>c.seq===editSeq);
@@ -910,18 +1041,16 @@ async function submitCall(){
       renderLog(); updateBadge(); clearForm(); toast('تم تحديث المكالمة','ok');
       const logBtn=document.querySelector('[data-tab="log"]'); switchTab('log',logBtn);
       requestAnimationFrame(()=>{ const card=document.getElementById('dtl-'+savedSeq); if(card){ if(!card.classList.contains('open')) togCard(savedSeq); const el=card.closest('.cc'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); } } });
-      
       showPostSaveModal(rec);
     } else {
       calls.unshift(rec);
       renderLog(); updateBadge(); clearForm();
       if(tagsPanelOpen){ toggleTagsPanel(); }
       toast('تم حفظ المكالمة','ok');
-      
       showPostSaveModal(rec);
     }
   } catch(err) {
-    toast('حدث خطأ أثناء حفظ المكالمة في قاعدة البيانات', 'err');
+    toast('حدث خطأ أثناء حفظ المكالمة', 'err');
     console.error(err);
   }
 }
@@ -932,7 +1061,11 @@ async function deleteCall(seq) {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
     store.delete(seq);
-    tx.oncomplete = () => {
+    tx.oncomplete = async () => {
+      // حذف من Firestore أيضاً
+      await deleteCallFirestore(seq);
+      // حذف أسماء الأطفال المحفوظة
+      deleteChildNames(seq);
       calls = calls.filter(c => c.seq !== seq);
       renderFilteredLog();
       updateBadge();
@@ -955,18 +1088,28 @@ function clearForm(){
   renderAllGroups(); document.querySelectorAll('[data-group="gender"],[data-group="ctype"],[data-group="child"]').forEach(b=>b.classList.remove('sel')); updateTagsBtnIndicator();
 }
 
+// ===== EDIT: تحديث التاريخ والوقت عند فتح نموذج التعديل =====
 function editCall(seq){
   const c=calls.find(x=>x.seq===seq); if(!c) return;
   editSeq=seq;
-  document.getElementById('phone').value=c.phone; document.getElementById('details').value=c.notes; document.getElementById('compNo').value=c.compNo||''; document.getElementById('reqNo').value=c.reqNo||'';
-  callDT=new Date(c.dt); updateSeqLabel(); updateDTBtns();
+  document.getElementById('phone').value=c.phone; 
+  document.getElementById('details').value=c.notes; 
+  document.getElementById('compNo').value=c.compNo||''; 
+  document.getElementById('reqNo').value=c.reqNo||'';
+  
+
+  // ===== FIX: تحميل التاريخ والوقت الفعلي للمكالمة =====
+  callDT = new Date(c.dt);
+  updateSeqLabel(); 
+  updateDTBtns();  // هذا يملأ datePicker و timePicker بالقيم الصحيحة
+  
   sel.gender=c.gender; sel.nat=c.nat; sel.branch=c.branch; sel.loc=c.loc; sel.src=c.src||''; sel.topics=c.topic?c.topic.split('، ').filter(Boolean):[]; sel.ctype=c.ctype; sel.child=c.child||''; sel.emo=c.emo||'';
   renderAllGroups(); updateCond();
   document.getElementById('submitBtn').textContent='تعديل ✓'; document.getElementById('custNotice').style.display='none';
   const formBtn=document.querySelector('[data-tab="form"]'); switchTab('form',formBtn); window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ===== POST SAVE MODAL (إجراء سريع) =====
+// ===== POST SAVE MODAL (شاعر واتساب) =====
 let psCallRecord = null;
 function showPostSaveModalBySeq(seq) {
     const c = calls.find(x => x.seq === seq);
@@ -977,17 +1120,25 @@ function showPostSaveModal(rec) {
     psCallRecord = rec;
     document.getElementById('ps-type').textContent = rec.ctype;
     document.getElementById('ps-summary').textContent = genSummary(rec);
-    document.getElementById('ps-children-container').innerHTML = '<input type="text" class="fi child-name-input" placeholder="اسم الطفل 1" />';
+    
+    // تحميل أسماء الأطفال المحفوظة مسبقاً لهذه المكالمة
+    const savedNames = getChildNames(rec.seq);
+    const container = document.getElementById('ps-children-container');
+    if (savedNames.length > 0) {
+      container.innerHTML = savedNames.map((name, i) => 
+        `<input type="text" class="fi child-name-input" placeholder="اسم الطفل ${i+1}" value="${name}" />`
+      ).join('');
+    } else {
+      container.innerHTML = '<input type="text" class="fi child-name-input" placeholder="اسم الطفل 1" />';
+    }
+    
     document.getElementById('post-save-modal').style.display = 'flex';
 }
 
 function addPSChildInput() {
     const container = document.getElementById('ps-children-container');
     const inputs = container.querySelectorAll('input');
-    if(inputs.length >= 10) {
-        toast('الحد الأقصى 10 أطفال', 'err');
-        return;
-    }
+    if(inputs.length >= 10) { toast('الحد الأقصى 10 أطفال', 'err'); return; }
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'fi child-name-input';
@@ -1000,14 +1151,26 @@ function getPSChildNamesList() {
     return Array.from(inputs).map(inp => inp.value.trim()).filter(n => n !== '');
 }
 
-function psNotifyAdmin() { if(psCallRecord) notifyAdmin(psCallRecord.seq); }
-function psNotifyBranch() { if(psCallRecord) notifyBranch(psCallRecord.seq); }
-function psSendFollowUp() { if(psCallRecord) sendFollowUp(psCallRecord.seq); }
+// حفظ أسماء الأطفال عند الضغط على أي زر من أزرار المودال
+function savePSChildNamesIfAny() {
+  if (!psCallRecord) return;
+  const names = getPSChildNamesList();
+  if (names.length > 0) {
+    saveChildNames(psCallRecord.seq, names);
+    // إعادة رسم السجل لتحديث التفاصيل
+    renderFilteredLog();
+  }
+}
+
+function psNotifyAdmin() { savePSChildNamesIfAny(); if(psCallRecord) notifyAdmin(psCallRecord.seq); }
+function psNotifyBranch() { savePSChildNamesIfAny(); if(psCallRecord) notifyBranch(psCallRecord.seq); }
+function psSendFollowUp() { savePSChildNamesIfAny(); if(psCallRecord) sendFollowUp(psCallRecord.seq); }
 
 function psRedirect1() {
     const names = getPSChildNamesList();
     if(names.length === 0) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
     if(!psCallRecord.branch || !S.branchPhones[psCallRecord.branch]) { toast('لم يتم إضافة رقم هذا الفرع', 'err'); return; }
+    savePSChildNamesIfAny();
     
     const clientTitle = (psCallRecord.gender === 'أنثى') ? 'أم' : 'أبو';
     const firstChild = names[0];
@@ -1017,12 +1180,9 @@ function psRedirect1() {
     let custPhone = psCallRecord.phone.replace(/\D/g,'');
     if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
     
-    // إدراج رسالة العميل داخل رابط wa.me
     const custMsg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}`;
     const branchClickLink = `https://wa.me/${custPhone}?text=${encodeURIComponent(custMsg)}`;
-
-    const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الضغط على الرابط التالي (سيقوم الرابط بفتح المحادثة مع العميل وإدراج رسالة جاهزة للإرسال):\n\n${branchClickLink}`;
-
+    const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الضغط على الرابط التالي:\n\n${branchClickLink}`;
     waLink(S.branchPhones[psCallRecord.branch], msgToBranch);
 }
 
@@ -1030,6 +1190,7 @@ function psRedirect2() {
     const names = getPSChildNamesList();
     if(names.length === 0) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
     if(!psCallRecord.branch || !S.branchPhones[psCallRecord.branch]) { toast('لم يتم إضافة رقم هذا الفرع', 'err'); return; }
+    savePSChildNamesIfAny();
     
     const clientTitle = (psCallRecord.gender === 'أنثى') ? 'أم' : 'أبو';
     const firstChild = names[0];
@@ -1039,12 +1200,9 @@ function psRedirect2() {
     let custPhone = psCallRecord.phone.replace(/\D/g,'');
     if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
     
-    // إدراج رسالة العميل داخل رابط wa.me
     const custMsg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}`;
     const branchClickLink = `https://wa.me/${custPhone}?text=${encodeURIComponent(custMsg)}`;
-
     const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الرابط التالي، ونرجو من العاملة الانتباه للجوال:\n\n${branchClickLink}`;
-
     waLink(S.branchPhones[psCallRecord.branch], msgToBranch);
 }
 
@@ -1059,10 +1217,6 @@ function renderLog(subset){
     if(sortVal === 'oldest') return a.dt - b.dt;
     if(sortVal === 'branch') return (a.branch||'').localeCompare(b.branch||'') || b.dt - a.dt;
     if(sortVal === 'ctype')  return (a.ctype||'').localeCompare(b.ctype||'') || b.dt - a.dt;
-    if(sortVal === 'gender') return (a.gender||'').localeCompare(b.gender||'') || b.dt - a.dt;
-    if(sortVal === 'nat')    return (a.nat||'').localeCompare(b.nat||'') || b.dt - a.dt;
-    if(sortVal === 'loc')    return (a.loc||'').localeCompare(b.loc||'') || b.dt - a.dt;
-    if(sortVal === 'emo')    return (a.emo||'').localeCompare(b.emo||'') || b.dt - a.dt;
     if(sortVal === 'src')    return (a.src||'').localeCompare(b.src||'') || b.dt - a.dt;
     return b.dt - a.dt; 
   });
@@ -1095,9 +1249,44 @@ function cardSummary(c){
   let s=verb; if(topicPart) s+=' '+topicPart; if(c.branch) s+=` في فرع ${c.branch}`; return s;
 }
 
+// دالة مساعدة لعرض معلومات الأطفال في التفاصيل
+function buildChildDisplay(c) {
+  const f = c.gender === 'أنثى';
+  const parentLabel = f ? 'أم' : 'أب';
+  const childCount = c.child || '';
+  const names = getChildNames(c.seq);
+  
+  if (!childCount) return '';
+  
+  let display = `${parentLabel} ${childCount}`;
+  if (names.length > 0) {
+    display += ` وهم (${names.join(' و ')})`;
+  }
+  return display;
+}
+
 function callCard(c, nested){
-  const sa=nested?'':' standalone'; const fields=[{l:'تاريخ المكالمة',v:`(${fmtDate(c.dt)})`},{l:'جوال العميل',v:c.phone},{l:'الجنس',v:c.gender},{l:'اللكنة',v:c.nat},{l:'الفرع',v:c.branch},{l:'الموقع',v:c.loc},{l:'عدد الأطفال',v:c.child||'—'},{l:'نبرة العميل',v:c.emo||'—'},{l:'المصدر',v:c.src||'—'},{l:'الموضوع',v:c.topic||'—'},...(c.compNo?[{l:'رقم الشكوى',v:c.compNo}]:[]),...(c.reqNo?[{l:'رقم الطلب',v:c.reqNo}]:[])];
+  const sa=nested?'':' standalone'; 
+  const childDisplay = buildChildDisplay(c);
+  const fields=[
+    {l:'تاريخ المكالمة',v:`(${fmtDate(c.dt)})`},
+    {l:'جوال العميل',v:c.phone},
+    {l:'الجنس',v:c.gender},
+    {l:'اللكنة',v:c.nat},
+    {l:'الفرع',v:c.branch},
+    {l:'الموقع',v:c.loc},
+    {l:'عدد الأطفال',v:childDisplay||c.child||'—'},
+    {l:'نبرة العميل',v:c.emo||'—'},
+    {l:'المصدر',v:c.src||'—'},
+    {l:'الموضوع',v:c.topic||'—'},
+    ...(c.compNo?[{l:'رقم الشكوى',v:c.compNo}]:[]),
+    ...(c.reqNo?[{l:'رقم الطلب',v:c.reqNo}]:[])
+  ];
   const seqCls=c.ctype==='شكوى'?'ct-complaint':c.ctype==='طلب'?'ct-request':'ct-inquiry';
+  
+  // WhatsApp SVG icon
+  const waSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+
   return `
   <div class="cc${sa}">
     <div class="cc-top" onclick="togCard('${c.seq}')">
@@ -1105,14 +1294,11 @@ function callCard(c, nested){
       <span class="cc-summary">${cardSummary(c)}</span><span class="cc-tog" id="tog-${c.seq}" style="font-size:18px;font-weight:300;">＋</span>
     </div>
     <div class="cc-act-row" id="act-${c.seq}" style="display:none;padding:8px 18px;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:#f8fafc;">
-      <button onclick="event.stopPropagation();notifyAdmin('${c.seq}')" style="color:var(--accent); border:1px solid var(--al);">الإدارة</button>
-      <button onclick="event.stopPropagation();notifyBranch('${c.seq}')" style="color:var(--amber); border:1px solid var(--ambl);">الفرع</button>
-      <button onclick="event.stopPropagation();sendFollowUp('${c.seq}')" style="color:var(--green); border:1px solid var(--gl);">العميل</button>
-      <button onclick="event.stopPropagation();showPostSaveModalBySeq('${c.seq}')" style="color:var(--teal); border:1px solid var(--tl);">إجراء سريع</button>
-      <button id="summBtn-${c.seq}" onclick="event.stopPropagation();toggleSummDetail('${c.seq}')" style="color:var(--text); border:1px solid var(--border);">ملخص</button>
-      <button onclick="event.stopPropagation();editCall('${c.seq}')" style="color:var(--t2); border:1px solid var(--border);">تعديل</button>
-      <button onclick="event.stopPropagation();deleteCall('${c.seq}')" style="color:var(--red); border:1px solid var(--rl); margin-right:auto;">حذف</button>
-      <button id="copy-${c.seq}" onclick="event.stopPropagation();copySumm('${c.seq}')" style="display:none; color:var(--purple); border:1px solid var(--pl);">نسخ</button>
+      <button onclick="event.stopPropagation();showPostSaveModalBySeq('${c.seq}')" class="btn-wa">${waSVG} شاعر واتساب</button>
+      <button id="summBtn-${c.seq}" onclick="event.stopPropagation();toggleSummDetail('${c.seq}')" style="color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; background:var(--white); cursor:pointer; margin-bottom:4px;">ملخص</button>
+      <button onclick="event.stopPropagation();editCall('${c.seq}')" style="color:var(--t2); border:1px solid var(--border); border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; background:var(--white); cursor:pointer; margin-bottom:4px;">تعديل</button>
+      <button onclick="event.stopPropagation();deleteCall('${c.seq}')" style="color:var(--red); border:1px solid var(--rl); border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; background:var(--white); cursor:pointer; margin-bottom:4px; margin-right:auto;">حذف</button>
+      <button id="copy-${c.seq}" onclick="event.stopPropagation();copySumm('${c.seq}')" style="display:none; color:var(--purple); border:1px solid var(--pl); border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; background:var(--white); cursor:pointer; margin-bottom:4px;">نسخ</button>
     </div>
     <div class="cc-dtl" id="dtl-${c.seq}">
       <div class="summ-box" id="summ-${c.seq}"></div>
@@ -1121,23 +1307,36 @@ function callCard(c, nested){
   </div>`;
 }
 
-// ===== SUMMARY GENERATION =====
+// ===== SUMMARY =====
 function genSummary(c){
   const f=c.gender==='أنثى'; const g=(m,fm)=>f?fm:m; const parts=[];
   const childLabel={'طفل':'طفل واحد','طفلين':'طفلين','ثلاثة':'ثلاثة أطفال','أربعة':'أربعة أطفال','خمسة':'خمسة أطفال','أكثر':'أكثر من خمسة أطفال'};
-  parts.push(c.child && childLabel[c.child] ? `${g('أب','أم')} لـ${childLabel[c.child]}` : g('أب','أم'));
+  
+  // عرض معلومات الأطفال مع الأسماء
+  const childNames = getChildNames(c.seq);
+  let childPart = '';
+  if(c.child && childLabel[c.child]) {
+    childPart = `${g('أب','أم')} لـ${childLabel[c.child]}`;
+    if(childNames.length > 0) {
+      childPart += ` وهم (${childNames.join(' و ')})`;
+    }
+  } else {
+    childPart = g('أب','أم');
+  }
+  parts.push(childPart);
+  
   if(c.nat){ const natF = c.nat.endsWith('ي') ? c.nat+'ة' : c.nat; parts.push(`يظهر ${g('أنه','أنها')} ${g(c.nat, natF)}`); }
   const verb={'شكوى':g('يشتكي','تشتكي'),'استفسار':g('يستفسر عن','تستفسر عن'),'طلب':g('يطلب','تطلب')}[c.ctype]||c.ctype;
   let callPart=`${g('اتصل','اتصلت')} ${verb}`; if(c.topic) callPart+=` ${c.topic}`; if(c.branch) callPart+=` في ${c.branch}`; parts.push(callPart);
   if(c.compNo) parts.push(`رقم الشكوى: ${c.compNo}`); if(c.reqNo) parts.push(`رقم الطلب: ${c.reqNo}`);
-if(c.notes) parts.push(`في المكالمة: ${c.notes}`);
+  if(c.notes) parts.push(`في المكالمة: ${c.notes}`);
   parts.push(`رقم ${g('العميل','العميلة')} ${c.phone}`);
   return parts.join('، ');
 }
+
 function copySumm(seq){ const box=document.getElementById('summ-'+seq); if(!box||!box.textContent) return; navigator.clipboard.writeText(box.textContent).then(()=>toast('تم نسخ النص','ok')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=box.textContent; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('تم نسخ النص','ok'); }); }
 function waLink(phone, msg){ let p=phone.replace(/\D/g,''); if(p.startsWith('0')) p='966'+p.slice(1); window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`,'_blank'); }
 
-// دالة العميل المحدثة بالشكل المطلوب
 function followUpText(c){ 
   const f=c.gender==='أنثى'; 
   const clientLabel=f?'أم':'أب'; 
@@ -1176,20 +1375,12 @@ function renderSuggestedTags() {
   if (!container) return;
   const fc = filteredCalls();
   const counts = {};
-  
   fc.forEach(c => {
     const tags = [c.ctype, c.branch, c.loc, c.src, c.gender, c.nat, c.emo, c.child];
     if (c.topic) tags.push(...c.topic.split('، '));
-    
-    tags.filter(Boolean).forEach(tag => {
-      if (!analyticsTerms.includes(tag)) {
-        counts[tag] = (counts[tag] || 0) + 1;
-      }
-    });
+    tags.filter(Boolean).forEach(tag => { if (!analyticsTerms.includes(tag)) { counts[tag] = (counts[tag] || 0) + 1; } });
   });
-  
   const topTags = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(t => t[0]);
-  
   if (!topTags.length) { container.innerHTML = ''; return; }
   container.innerHTML = `<span style="font-size:13px;color:var(--tl2);font-weight:800;margin-left:4px;">الأكثر ظهورا:</span> ` + 
     topTags.map(tag => `<button onclick="addSuggestedTag('${tag}')" class="ob" style="padding:6px 14px; font-size:12px; border-radius:100px; background:var(--bg); border:1px solid var(--border); box-shadow:var(--ss);">${tag}</button>`).join('');
@@ -1197,143 +1388,51 @@ function renderSuggestedTags() {
 
 function renderFilteredLog(){ 
   renderLog(filteredLogCalls()); 
-  // إذا كان العرض النصي مفعلاً، يتم تحديثه أيضاً لتطبيق الفلترة المباشرة
-  if (typeof textViewActive !== 'undefined' && textViewActive) {
-      buildTextView();
-  }
+  if (typeof textViewActive !== 'undefined' && textViewActive) { buildTextView(); }
 }
 
 function timeSlot(dt){ const h=dt.getHours(); if(h>=12&&h<14) return '12:00~2:00م'; if(h>=14&&h<16) return '2:00~4:00م'; if(h>=16&&h<18) return '4:00~6:00م'; if(h>=18&&h<20) return '6:00~8:00م'; if(h>=20&&h<22) return '8:00~10:00م'; if(h>=22) return '10:00~12:00م'; if(h>=0&&h<2) return '12:00~2:00ص'; if(h>=2&&h<4) return '2:00~4:00ص'; if(h>=4&&h<6) return '4:00~6:00ص'; if(h>=6&&h<8) return '6:00~8:00ص'; if(h>=8&&h<10) return '8:00~10:00ص'; if(h>=10&&h<12) return '10:00~12:00ص'; return null; }
 
-// ===== LINE CHART LOGIC =====
-function getISOWeek(d) {
-    const date = new Date(d.getTime());
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-    const week1 = new Date(date.getFullYear(), 0, 4);
-    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
-}
-function getGroupKey(date, scale) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    if(scale === 'day') return `${y}-${m}-${d}`;
-    if(scale === 'week') {
-        const w = String(getISOWeek(date)).padStart(2, '0');
-        return `${y}-W${w}`;
-    }
-    if(scale === 'month') return `${y}-${m}`;
-    if(scale === 'year') return `${y}`;
-}
-function formatGroupKey(key, scale) {
-    if(scale === 'day') {
-       const [y,m,d] = key.split('-');
-       return `${d} ${MONTHS[parseInt(m)-1]}`;
-    }
-    if(scale === 'week') return `أسبوع ${key.split('-W')[1]} (${key.split('-')[0]})`;
-    if(scale === 'month') {
-       const [y,m] = key.split('-');
-       return `${MONTHS[parseInt(m)-1]} ${y}`;
-    }
-    return key; 
-}
+// ===== LINE CHART =====
+function getISOWeek(d) { const date = new Date(d.getTime()); date.setHours(0,0,0,0); date.setDate(date.getDate()+3-(date.getDay()+6)%7); const week1=new Date(date.getFullYear(),0,4); return 1+Math.round(((date.getTime()-week1.getTime())/86400000-3+(week1.getDay()+6)%7)/7); }
+function getGroupKey(date, scale) { const y=date.getFullYear(); const m=String(date.getMonth()+1).padStart(2,'0'); const d=String(date.getDate()).padStart(2,'0'); if(scale==='day') return `${y}-${m}-${d}`; if(scale==='week'){ const w=String(getISOWeek(date)).padStart(2,'0'); return `${y}-W${w}`; } if(scale==='month') return `${y}-${m}`; if(scale==='year') return `${y}`; }
+function formatGroupKey(key, scale) { if(scale==='day'){ const [y,m,d]=key.split('-'); return `${d} ${MONTHS[parseInt(m)-1]}`; } if(scale==='week') return `أسبوع ${key.split('-W')[1]} (${key.split('-')[0]})`; if(scale==='month'){ const [y,m]=key.split('-'); return `${MONTHS[parseInt(m)-1]} ${y}`; } return key; }
 
 let lineChartInstance = null;
 function updateLineChart() {
     const scale = document.getElementById('timeScaleSelect').value;
     const fc = filteredCalls();
-    
-    // الفرز التصاعدي زمنياً ليكون الرسم صحيحاً
     const sorted = [...fc].sort((a,b) => a.dt - b.dt);
-    
     const grouped = {};
-    sorted.forEach(c => {
-        const k = getGroupKey(c.dt, scale);
-        if(!grouped[k]) grouped[k] = { total: 0 };
-        grouped[k].total++;
-    });
-
+    sorted.forEach(c => { const k=getGroupKey(c.dt,scale); if(!grouped[k]) grouped[k]={total:0}; grouped[k].total++; });
     const labels = Object.keys(grouped);
     const displayLabels = labels.map(k => formatGroupKey(k, scale));
     const dataTotal = labels.map(k => grouped[k].total);
-
     const ctx = document.getElementById('timelineChart').getContext('2d');
-    
     if(lineChartInstance) lineChartInstance.destroy();
-
     lineChartInstance = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: displayLabels,
-            datasets: [
-                {
-                    label: 'إجمالي النشاط',
-                    data: dataTotal,
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    tension: 0.3, fill: true, borderWidth: 2,
-                    pointRadius: 2, pointHoverRadius: 5
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'top', rtl: true, labels: { font: { family: 'Cairo', weight: 'bold' } } },
-                tooltip: { titleFont: { family: 'Cairo' }, bodyFont: { family: 'Cairo' }, rtl: true, textDirection: 'rtl' }
-            },
-            scales: {
-                y: { beginAtZero: true, position: 'right', ticks: { stepSize: 1, font: { family: 'Cairo' } } },
-                x: { ticks: { font: { family: 'Cairo' } } }
-            }
-        }
+        data: { labels: displayLabels, datasets: [{ label: 'إجمالي النشاط', data: dataTotal, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.3, fill: true, borderWidth: 2, pointRadius: 2, pointHoverRadius: 5 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', rtl: true, labels: { font: { family: 'Cairo', weight: 'bold' } } }, tooltip: { titleFont: { family: 'Cairo' }, bodyFont: { family: 'Cairo' }, rtl: true, textDirection: 'rtl' } }, scales: { y: { beginAtZero: true, position: 'right', ticks: { stepSize: 1, font: { family: 'Cairo' } } }, x: { ticks: { font: { family: 'Cairo' } } } } }
     });
 }
 
 function updateAnalytics(){
   const fc=filteredCalls();
   document.getElementById('stTotal').textContent=fc.length; document.getElementById('stComp').textContent=fc.filter(c=>c.ctype==='شكوى').length; document.getElementById('stInq').textContent=fc.filter(c=>c.ctype==='استفسار').length; document.getElementById('stReq').textContent=fc.filter(c=>c.ctype==='طلب').length;
-  
-  // تحديث الرسم البياني الخطي
   updateLineChart();
 
-  // تحديث مربعات الفروع التفاعلية
   const branchGrid = document.getElementById('branchAnalyticsGrid');
   if (branchGrid) {
       let branchHtml = '';
       S.branches.forEach(br => {
           const brCalls = fc.filter(c => c.branch === br);
           const count = brCalls.length;
-          
           const topicsMap = {};
-          brCalls.forEach(c => {
-              if (c.topic) {
-                  c.topic.split('، ').filter(Boolean).forEach(t => {
-                      topicsMap[t] = (topicsMap[t] || 0) + 1;
-                  });
-              }
-          });
-          const topTopics = Object.entries(topicsMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
-          
-          let topicsHtml = topTopics.length ? topTopics.map(([t, c]) => `
-              <div style="display:flex; justify-content:space-between; font-size:12px; border-bottom:1px solid var(--border); padding:6px 0;">
-                  <span style="color:var(--t2); font-weight:700;">${t}</span>
-                  <span style="background:var(--al); color:var(--accent); padding:2px 8px; border-radius:10px; font-weight:800;">${c}</span>
-              </div>
-          `).join('') : '<div style="font-size:12px; color:var(--tl2); text-align:center; padding:10px 0;">لا توجد مواضيع مضافة</div>';
-
-          branchHtml += `
-              <div class="sc" style="padding:16px; display:flex; flex-direction:column; gap:12px; border-top: 4px solid var(--accent); background:var(--white);">
-                  <div style="display:flex; justify-content:space-between; align-items:center;">
-                      <div style="font-size:15px; font-weight:800; color:var(--text);">${br}</div>
-                      <div style="font-size:24px; font-weight:800; color:var(--accent);">${count}</div>
-                  </div>
-                  <div style="background:var(--bg); border-radius:10px; padding:8px 12px; flex:1;">
-                      ${topicsHtml}
-                  </div>
-              </div>
-          `;
+          brCalls.forEach(c => { if (c.topic) { c.topic.split('، ').filter(Boolean).forEach(t => { topicsMap[t] = (topicsMap[t] || 0) + 1; }); } });
+          const topTopics = Object.entries(topicsMap).sort((a,b) => b[1]-a[1]).slice(0, 5);
+          let topicsHtml = topTopics.length ? topTopics.map(([t, c]) => `<div style="display:flex; justify-content:space-between; font-size:12px; border-bottom:1px solid var(--border); padding:6px 0;"><span style="color:var(--t2); font-weight:700;">${t}</span><span style="background:var(--al); color:var(--accent); padding:2px 8px; border-radius:10px; font-weight:800;">${c}</span></div>`).join('') : '<div style="font-size:12px; color:var(--tl2); text-align:center; padding:10px 0;">لا توجد مواضيع مضافة</div>';
+          branchHtml += `<div class="sc" style="padding:16px; display:flex; flex-direction:column; gap:12px; border-top: 4px solid var(--accent); background:var(--white);"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:15px; font-weight:800; color:var(--text);">${br}</div><div style="font-size:24px; font-weight:800; color:var(--accent);">${count}</div></div><div style="background:var(--bg); border-radius:10px; padding:8px 12px; flex:1;">${topicsHtml}</div></div>`;
       });
       branchGrid.innerHTML = branchHtml;
   }
@@ -1341,61 +1440,25 @@ function updateAnalytics(){
   const p1=['#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe']; const p2=['#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff']; const p3=['#6366f1','#ec4899']; const p4=['#06b6d4','#22d3ee','#67e8f9','#a5f3fc','#cffafe','#ecfeff']; const p5=['#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5'];
   const cnt=(k)=>{const m={};fc.forEach(c=>{if(c[k])m[c[k]]=(m[c[k]]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);};
   renderBar('chLoc', cnt('loc'), p1); renderPie('chNat', cnt('nat'), p2); renderPie('chGen', cnt('gender'), p3); renderBar('chSrc', cnt('src'), p1);
-  
-  // تصاميم جديدة ومختلفة (البطاقات) للأطفال والنبرة
   renderStatCards('chChild', cnt('child'), p4);
   renderStatCards('chEmo', cnt('emo'), p5);
 
   const topicPalettes={'شكوى':['#ef4444','#f87171','#fca5a5','#fecaca','#fee2e2'],'استفسار':['#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff'],'طلب':['#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5']};
   const ctypeElMap={'شكوى':'chTopComp','استفسار':'chTopInq','طلب':'chTopReq'};
-  
-  ['شكوى','استفسار','طلب'].forEach(ct=>{ 
-      const subset=fc.filter(c=>c.ctype===ct); 
-      const m={}; 
-      subset.forEach(c=>{ 
-          if(!c.topic) return; 
-          c.topic.split('، ').filter(Boolean).forEach(t=>{ m[t]=(m[t]||0)+1; }); 
-      }); 
-      const data=Object.entries(m).sort((a,b)=>b[1]-a[1]); 
-      renderCountsList(ctypeElMap[ct], data, topicPalettes[ct]); 
-  });
+  ['شكوى','استفسار','طلب'].forEach(ct=>{ const subset=fc.filter(c=>c.ctype===ct); const m={}; subset.forEach(c=>{ if(!c.topic) return; c.topic.split('، ').filter(Boolean).forEach(t=>{ m[t]=(m[t]||0)+1; }); }); const data=Object.entries(m).sort((a,b)=>b[1]-a[1]); renderCountsList(ctypeElMap[ct], data, topicPalettes[ct]); });
 
   const ORDER=['12:00~2:00م','2:00~4:00م','4:00~6:00م','6:00~8:00م','8:00~10:00م','10:00~12:00م','12:00~2:00ص','2:00~4:00ص','4:00~6:00ص','6:00~8:00ص','8:00~10:00ص','10:00~12:00ص'];
   const tm={}; fc.forEach(c=>{ const s=timeSlot(c.dt); if(s) tm[s]=(tm[s]||0)+1; }); const tmData=ORDER.filter(k=>tm[k]).map(k=>[k,tm[k]]);
   renderPie('chTime', tmData, ['#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff','#06b6d4','#22d3ee','#67e8f9','#a5f3fc','#10b981','#34d399']);
-  
   if(typeof renderSuggestedTags === 'function') renderSuggestedTags();
 }
 
-function renderStatCards(id, data, colors){ 
-    const el = document.getElementById(id); 
-    if(!el) return; 
-    el.className = ''; 
-    if(!data.length){ el.innerHTML='<div class="ec" style="padding:14px 0;font-size:13px; color:var(--tl2); text-align:center;">لا توجد بيانات</div>'; return; } 
-    el.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:12px;">` + data.map(([lbl, val], i) => `
-        <div style="flex: 1 1 calc(33% - 12px); min-width:80px; background:var(--white); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:var(--ss); border-bottom: 3px solid ${colors[i%colors.length]};">
-            <span style="font-size:20px; font-weight:800; color:var(--text); line-height:1; margin-bottom:4px;">${val}</span>
-            <span style="font-size:12px; font-weight:700; color:var(--t2); text-align:center;">${lbl}</span>
-        </div>
-    `).join('') + `</div>`; 
-}
-
-function renderCountsList(id, data, colors){
-    const el = document.getElementById(id);
-    if(!el) return;
-    if(!data.length){ el.innerHTML='<div class="ec" style="padding:20px 0; color:var(--tl2); text-align:center;">لا توجد</div>'; return; }
-    el.innerHTML = data.map(([lbl, val], i) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:var(--bg); border-radius:8px; margin-bottom:8px; border-right:4px solid ${colors[i%colors.length]}">
-            <span style="font-size:13px; font-weight:700; color:var(--t2);">${lbl}</span>
-            <span style="font-size:15px; font-weight:800; color:var(--text);">${val}</span>
-        </div>
-    `).join('');
-}
-
+function renderStatCards(id, data, colors){ const el=document.getElementById(id); if(!el) return; el.className=''; if(!data.length){ el.innerHTML='<div class="ec" style="padding:14px 0;font-size:13px; color:var(--tl2); text-align:center;">لا توجد بيانات</div>'; return; } el.innerHTML=`<div style="display:flex; flex-wrap:wrap; gap:12px;">`+data.map(([lbl,val],i)=>`<div style="flex: 1 1 calc(33% - 12px); min-width:80px; background:var(--white); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:var(--ss); border-bottom: 3px solid ${colors[i%colors.length]};"><span style="font-size:20px; font-weight:800; color:var(--text); line-height:1; margin-bottom:4px;">${val}</span><span style="font-size:12px; font-weight:700; color:var(--t2); text-align:center;">${lbl}</span></div>`).join('')+`</div>`; }
+function renderCountsList(id, data, colors){ const el=document.getElementById(id); if(!el) return; if(!data.length){ el.innerHTML='<div class="ec" style="padding:20px 0; color:var(--tl2); text-align:center;">لا توجد</div>'; return; } el.innerHTML=data.map(([lbl,val],i)=>`<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:var(--bg); border-radius:8px; margin-bottom:8px; border-right:4px solid ${colors[i%colors.length]}"><span style="font-size:13px; font-weight:700; color:var(--t2);">${lbl}</span><span style="font-size:15px; font-weight:800; color:var(--text);">${val}</span></div>`).join(''); }
 function renderBar(id, data, colors){ const el=document.getElementById(id); if(!el) return; if(!data.length){el.innerHTML='<div class="ec">لا توجد بيانات</div>';el.className='bar-c';return;} const max=Math.max(...data.map(d=>d[1])); el.className='bar-c'; el.innerHTML=data.map(([lbl,val],i)=>`<div style="display:flex;flex-direction:column;gap:6px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text);font-weight:700;">${lbl}</span><span style="color:var(--tl2);font-weight:700;">${val}</span></div><div style="background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;"><div style="height:100%;border-radius:6px;transition:width 0.5s ease;background:${colors[i%colors.length]};width:${(val/max*100).toFixed(1)}%;"></div></div></div>`).join(''); }
 function renderPie(id, data, colors){ const el=document.getElementById(id); if(!el) return; if(!data.length){el.innerHTML='<div class="ec">لا توجد بيانات</div>';el.className='';return;} const tot=data.reduce((s,d)=>s+d[1],0); const sz=110,cx=55,cy=55,r=42,ir=24; let a=-Math.PI/2, paths=''; data.forEach(([,val],i)=>{ const a2=a+(val/tot)*2*Math.PI,lg=(val/tot)*2*Math.PI>Math.PI?1:0; const p=(ag,rr)=>[cx+rr*Math.cos(ag),cy+rr*Math.sin(ag)]; const[x1,y1]=p(a,r),[x2,y2]=p(a2,r),[ix1,iy1]=p(a2,ir),[ix2,iy2]=p(a,ir); paths+=`<path d="M${x1} ${y1} A${r} ${r} 0 ${lg} 1 ${x2} ${y2} L${ix1} ${iy1} A${ir} ${ir} 0 ${lg} 0 ${ix2} ${iy2}Z" fill="${colors[i%colors.length]}"/>`; a=a2; }); const legend=data.map(([lbl,val],i)=>`<div style="display:flex;align-items:center;gap:8px;"><div style="background:${colors[i%colors.length]};width:10px;height:10px;border-radius:50%;flex-shrink:0;"></div><span style="font-size:13px;font-weight:600;color:var(--t2);flex:1;">${lbl}</span><span style="font-size:13px;font-weight:800;color:var(--text);">${((val/tot)*100).toFixed(0)}%</span></div>`).join(''); el.className=''; el.style.cssText='display:flex;align-items:center;gap:24px;'; el.innerHTML=`<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">${paths}</svg><div style="flex:1;display:flex;flex-direction:column;gap:8px;">${legend}</div>`; }
 
-// ===== MODAL =====
+// ===== MAINTENANCE =====
 const MSECS=[
   {key:'nat', lbl:'الجنسيات', ph:'أضف جنسية...'},{key:'branches',lbl:'الفروع', ph:'أضف فرعاً...'},{key:'locs', lbl:'مواقع العميل', ph:'أضف موقعاً...'},
   {key:'ctypes', lbl:'أنواع المكالمة', ph:'أضف نوعاً...'},{key:'emos', lbl:'مشاعر العميل', ph:'أضف مشاعر...'},{key:'srcs', lbl:'مصادر الوصول', ph:'أضف مصدراً...'}
@@ -1424,6 +1487,15 @@ function renderMBody(){
   html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);"><div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">رقم واتساب الإدارة</div><div style="display:flex;gap:10px;">
       <input type="tel" inputmode="numeric" class="min" style="direction:ltr;" placeholder="05XXXXXXXX" maxlength="10" value="${S.adminPhone||''}" oninput="S.adminPhone=this.value; saveS();" /></div></div>`;
 
+  // Firebase Config Section
+  html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+    <div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:8px;">إعدادات Firebase</div>
+    <div style="font-size:12px; color:var(--tl2); margin-bottom:16px;">حالة الاتصال: <span id="fbStatusMaint" style="font-weight:800; color:${window._firestoreReady ? 'var(--green)' : 'var(--red)'}">${window._firestoreReady ? 'متصل ✓' : 'غير متصل — راجع الكود'}</span></div>
+    <div style="background:var(--ambl); border-radius:10px; padding:12px 16px; font-size:12px; color:#925c0e; line-height:1.8;">
+      لتفعيل Firebase، افتح الملف وعدّل قسم <strong>firebaseConfig</strong> بإعدادات مشروعك من Firebase Console.
+    </div>
+  </div>`;
+
   html += `<div><div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">مواضيع المكالمة (حسب النوع)</div>`;
   S.ctypes.forEach(ct=>{
     if(!S.topicMap[ct]) S.topicMap[ct]=[];
@@ -1440,7 +1512,7 @@ function delTopicItem(ct,i){ const removed=S.topicMap[ct][i]; S.topicMap[ct].spl
 function addItem(k){ const inp=document.getElementById('madd-'+k); const v=inp.value.trim(); if(!v) return; if(S[k].includes(v)){toast('العنصر موجود بالفعل','err');return;} S[k].push(v); saveS(); inp.value=''; renderMBody(); renderAllGroups(); }
 function delItem(k,i){ const removed=S[k][i]; S[k].splice(i,1); saveS(); const gmap={nat:'nat',branches:'branch',locs:'loc',ctypes:'ctype',emos:'emo',srcs:'src'}; const gk=gmap[k]; if(gk && sel[gk]===removed) sel[gk]=''; renderMBody(); renderAllGroups(); }
 
-// ===== TAGS PANEL TOGGLE =====
+// ===== TAGS PANEL =====
 let tagsPanelOpen = false;
 function toggleTagsPanel(){ tagsPanelOpen = !tagsPanelOpen; const panel = document.getElementById('tagsPanel'); const btn = document.getElementById('tagsToggleBtn'); panel.style.display = tagsPanelOpen ? 'block' : 'none'; btn.style.borderColor = tagsPanelOpen ? 'var(--accent)' : 'var(--border)'; btn.style.color = tagsPanelOpen ? 'var(--accent)' : 'var(--t2)'; btn.style.background  = tagsPanelOpen ? 'var(--al)' : 'var(--white)'; updateTagsBtnIndicator(); }
 function updateTagsBtnIndicator(){ const btn=document.getElementById('tagsToggleBtn'); if(!btn) return; const hasAny=Object.values(sel).some(v=>Array.isArray(v)?v.length>0:v!==''); btn.style.borderColor = tagsPanelOpen ? 'var(--accent)' : (hasAny ? 'var(--green)' : 'var(--border)'); btn.style.color = tagsPanelOpen ? 'var(--accent)' : (hasAny ? 'var(--green)' : 'var(--t2)'); }
@@ -1448,24 +1520,14 @@ function updateTagsBtnIndicator(){ const btn=document.getElementById('tagsToggle
 // ===== TOAST & EXPORT =====
 function toast(msg, type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.className=`toast ${type} show`; setTimeout(()=>t.classList.remove('show'),3000); }
 let groupMode=false;
-function toggleGroupMode(){ 
-  groupMode=!groupMode; 
-  const icon = document.getElementById('groupModeIcon');
-  if(icon) {
-      icon.textContent = groupMode ? '✓' : '';
-  }
-  renderFilteredLog(); 
-}
-
+function toggleGroupMode(){ groupMode=!groupMode; const icon=document.getElementById('groupModeIcon'); if(icon) icon.textContent=groupMode?'✓':''; renderFilteredLog(); }
 
 function exportCSV(){ if(!calls.length) return toast('لا توجد بيانات للتصدير','err'); const h=['تسلسل','التاريخ','الوقت','جوال العميل','الجنس','لكنة العميل','الفرع','الموقع','المصدر','الموضوع','نوع المكالمة','رقم الشكوى','رقم الطلب','الأطفال','نبرة العميل','التفاصيل']; const rows=calls.map(c=>[c.seq,fmtDate(c.dt),fmtTime(c.dt),c.phone,c.gender||'',c.nat||'',c.branch||'',c.loc||'',c.src||'',c.topic||'',c.ctype||'',c.compNo||'',c.reqNo||'',c.child||'',c.emo||'',`"${c.notes||''}"`]); const csv=[h,...rows].map(r=>r.join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'})); a.download=`calls_${new Date().toLocaleDateString('en-CA')}.csv`; a.click(); toast('تم تصدير الجدول بنجاح'); }
 function exportTXT(){ if(!calls.length) return toast('لا توجد بيانات للتصدير','err'); const dayMap={}, dayOrder=[]; [...calls].sort((a,b)=>a.dt-b.dt).forEach(c=>{ const k=dayKey(c.dt); if(!dayMap[k]){dayMap[k]={lbl:fmtDate(c.dt),cs:[]};dayOrder.push(k);} dayMap[k].cs.push(c); }); let txt=''; dayOrder.forEach(dk=>{ const{lbl,cs}=dayMap[dk]; txt+=`════════════════════════\n${lbl}\n════════════════════════\n\n`; cs.forEach(c=>{ txt+=`[${fmtTime(c.dt)}] — ${genSummary(c)}\n\n`; }); }); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+txt],{type:'text/plain;charset=utf-8;'})); a.download=`call_summaries_${new Date().toLocaleDateString('en-CA')}.txt`; a.click(); toast('تم تصدير الملخصات بنجاح'); }
 
-// ===== EXCEL IMPORT =====
+// ===== IMPORT =====
 async function handleImport(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
+  const file = event.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
@@ -1474,111 +1536,32 @@ async function handleImport(event) {
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
-
-      if(json.length === 0) {
-        toast('الملف المرفق فارغ', 'err');
-        return;
-      }
-
+      if(json.length === 0) { toast('الملف المرفق فارغ', 'err'); return; }
       let importedCount = 0;
-      
       const parseArabicDateTime = (dateStr, timeStr) => {
         let d = new Date();
         try {
-          if (typeof dateStr === 'number') {
-              // استخراج التاريخ بتوقيت UTC لتجنب تغييرات المنطقة الزمنية
-              let utcDate = new Date(Math.round((dateStr - 25569) * 86400 * 1000));
-              d = new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate());
-          } else if (dateStr) {
-            if(dateStr.toString().includes('/')) {
-                 const parsed = new Date(dateStr);
-                 if(!isNaN(parsed)) d = parsed;
-            } else if (dateStr.toString().includes('-')) {
-                 const parsed = new Date(dateStr);
-                 if(!isNaN(parsed)) d = parsed;
-            } else {
-                 const parts = dateStr.toString().split(' ');
-                 if(parts.length >= 2) {
-                   const day = parseInt(parts[0]);
-                   const monthIdx = MONTHS.indexOf(parts[1]);
-                   if(!isNaN(day) && monthIdx !== -1) { 
-                       d.setMonth(monthIdx); 
-                       d.setDate(day); 
-                       if (parts[2]) d.setFullYear(parseInt(parts[2]));
-                   }
-                 }
-            }
-          }
-          if(timeStr !== undefined && timeStr !== null) {
-            if (typeof timeStr === 'number') {
-                let totalSeconds = Math.round(timeStr * 86400);
-                let h = Math.floor(totalSeconds / 3600);
-                let m = Math.floor((totalSeconds % 3600) / 60);
-                d.setHours(h, m, 0, 0);
-            } else {
-                const tParts = timeStr.toString().split(' ');
-                let timeNumStr = tParts[0];
-                let modifier = tParts[1] || '';
-                if(timeNumStr.includes(':')) {
-                    let timeNum = timeNumStr.split(':');
-                    let h = parseInt(timeNum[0]), m = parseInt(timeNum[1]);
-                    if((modifier === 'م' || modifier.toLowerCase() === 'pm') && h < 12) h += 12;
-                    if((modifier === 'ص' || modifier.toLowerCase() === 'am') && h === 12) h = 0;
-                    d.setHours(h, m, 0, 0);
-                }
-            }
-          }
+          if (typeof dateStr === 'number') { let utcDate = new Date(Math.round((dateStr - 25569) * 86400 * 1000)); d = new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate()); }
+          else if (dateStr) { if(dateStr.toString().includes('/')) { const parsed = new Date(dateStr); if(!isNaN(parsed)) d = parsed; } else if (dateStr.toString().includes('-')) { const parsed = new Date(dateStr); if(!isNaN(parsed)) d = parsed; } else { const parts = dateStr.toString().split(' '); if(parts.length >= 2) { const day = parseInt(parts[0]); const monthIdx = MONTHS.indexOf(parts[1]); if(!isNaN(day) && monthIdx !== -1) { d.setMonth(monthIdx); d.setDate(day); if (parts[2]) d.setFullYear(parseInt(parts[2])); } } } }
+          if(timeStr !== undefined && timeStr !== null) { if (typeof timeStr === 'number') { let totalSeconds = Math.round(timeStr * 86400); let h = Math.floor(totalSeconds / 3600); let m = Math.floor((totalSeconds % 3600) / 60); d.setHours(h, m, 0, 0); } else { const tParts = timeStr.toString().split(' '); let timeNumStr = tParts[0]; let modifier = tParts[1] || ''; if(timeNumStr.includes(':')) { let timeNum = timeNumStr.split(':'); let h = parseInt(timeNum[0]), m = parseInt(timeNum[1]); if((modifier === 'م' || modifier.toLowerCase() === 'pm') && h < 12) h += 12; if((modifier === 'ص' || modifier.toLowerCase() === 'am') && h === 12) h = 0; d.setHours(h, m, 0, 0); } } }
         } catch(err) { console.error('Date parse err:', err); }
         return d;
       };
-
       for(const row of json) {
-        const seq = row['تسلسل'];
-        if(!seq) continue; 
-
-        const rec = {
-          seq: seq.toString(),
-          dt: parseArabicDateTime(row['التاريخ'], row['الوقت']),
-          phone: (row['جوال العميل'] || '').toString(),
-          gender: row['الجنس'] || '',
-          nat: row['لكنة العميل'] || '',
-          branch: row['الفرع'] || '',
-          loc: row['الموقع'] || '',
-          src: row['المصدر'] || '',
-          topic: row['الموضوع'] || '',
-          ctype: row['نوع المكالمة'] || '',
-          compNo: (row['رقم الشكوى'] || '').toString(),
-          reqNo: (row['رقم الطلب'] || '').toString(),
-          child: row['الأطفال'] || '',
-          emo: row['نبرة العميل'] || '',
-          notes: row['التفاصيل'] || ''
-        };
-
+        const seq = row['تسلسل']; if(!seq) continue;
+        const rec = { seq: seq.toString(), dt: parseArabicDateTime(row['التاريخ'], row['الوقت']), phone: (row['جوال العميل'] || '').toString(), gender: row['الجنس'] || '', nat: row['لكنة العميل'] || '', branch: row['الفرع'] || '', loc: row['الموقع'] || '', src: row['المصدر'] || '', topic: row['الموضوع'] || '', ctype: row['نوع المكالمة'] || '', compNo: (row['رقم الشكوى'] || '').toString(), reqNo: (row['رقم الطلب'] || '').toString(), child: row['الأطفال'] || '', emo: row['نبرة العميل'] || '', notes: row['التفاصيل'] || '' };
         const existingIdx = calls.findIndex(c => c.seq === rec.seq);
-        if(existingIdx >= 0) {
-          calls[existingIdx] = {...calls[existingIdx], ...rec, dt: calls[existingIdx].dt}; 
-        } else {
-          calls.push(rec); 
-        }
-        
-        await saveCallDB(rec); 
+        if(existingIdx >= 0) { calls[existingIdx] = {...calls[existingIdx], ...rec, dt: calls[existingIdx].dt}; }
+        else { calls.push(rec); }
+        await saveCallDB(rec);
+        await saveCallFirestore(rec);
         importedCount++;
       }
-
       calls.sort((a,b) => b.dt - a.dt);
-      
       toast(`تم استيراد ${importedCount} مكالمة بنجاح`, 'ok');
-      renderFilteredLog();
-      updateBadge();
-      
-      if(document.getElementById('tab-analytics').classList.contains('active')) {
-          updateAnalytics();
-      }
-
-    } catch (err) {
-      console.error("Import Error: ", err);
-      toast('حدث خطأ أثناء قراءة الملف، تأكد من صيغة الأعمدة', 'err');
-    }
+      renderFilteredLog(); updateBadge();
+      if(document.getElementById('tab-analytics').classList.contains('active')) { updateAnalytics(); }
+    } catch (err) { console.error("Import Error: ", err); toast('حدث خطأ أثناء قراءة الملف', 'err'); }
     event.target.value = '';
   };
   reader.readAsArrayBuffer(file);
@@ -1586,38 +1569,17 @@ async function handleImport(event) {
 
 // ===== TEXT VIEW =====
 let textViewActive=false;
-function toggleTextView(){ 
-  textViewActive=!textViewActive; 
-  const panel=document.getElementById('textViewPanel'); 
-  const icon = document.getElementById('textViewIcon');
-  panel.style.display=textViewActive?'block':'none'; 
-  if(icon) {
-      icon.textContent = textViewActive ? '✓' : '';
-  }
-  if(textViewActive) buildTextView(); 
-}
+function toggleTextView(){ textViewActive=!textViewActive; const panel=document.getElementById('textViewPanel'); const icon=document.getElementById('textViewIcon'); panel.style.display=textViewActive?'block':'none'; if(icon) icon.textContent=textViewActive?'✓':''; if(textViewActive) buildTextView(); }
 
 function briefLine(c){ 
-  const f=c.gender==='أنثى'; 
-  const g=(m,fm)=>f?fm:m; 
-  
-  // تحديد لون واسم نوع المكالمة بخط عريض متزن
-  const ctypeColor = c.ctype === 'شكوى' ? 'var(--red)' : c.ctype === 'طلب' ? 'var(--green)' : 'var(--accent)';
-  const typeBadge = `<strong style="color:${ctypeColor}; font-size:14px;">${c.ctype}</strong>`;
-
+  const f=c.gender==='أنثى'; const g=(m,fm)=>f?fm:m; 
+  const ctypeColor=c.ctype==='شكوى'?'var(--red)':c.ctype==='طلب'?'var(--green)':'var(--accent)';
+  const typeBadge=`<strong style="color:${ctypeColor}; font-size:14px;">${c.ctype}</strong>`;
   const verb={'شكوى':g('يشتكي','تشتكي'),'استفسار':g('يستفسر عن','تستفسر عن'),'طلب':g('يطلب','تطلب')}[c.ctype]||c.ctype; 
   const parts=[]; 
-  
-  // إضافة النوع متبوعاً برقم العميل (بدون طابع الوقت)
   parts.push(`${typeBadge} ${g('اتصل','اتصلت')} <span dir="ltr">${c.phone}</span>`); 
   if(c.loc) parts.push(`من ${c.loc}`); 
-  
-  let topicPart = '';
-  if(c.topic) {
-      const topics = c.topic.split('، ').filter(Boolean);
-      topicPart = topics.join(' و ');
-  }
-  
+  let topicPart=''; if(c.topic){ const topics=c.topic.split('، ').filter(Boolean); topicPart=topics.join(' و '); }
   const vPart=[verb, topicPart].filter(Boolean).join(' '); 
   parts.push(vPart); 
   if(c.branch) parts.push(`في ${c.branch}`); 
@@ -1625,86 +1587,86 @@ function briefLine(c){
 }
 function buildTextView(){ 
   const body=document.getElementById('textViewBody'); 
-  const sortVal = document.getElementById('logSort') ? document.getElementById('logSort').value : 'newest';
-  
-  // نستخدم filteredLogCalls للحصول على النتائج المُفلترة فقط
-  let _calls = filteredLogCalls();
-
+  const sortVal=document.getElementById('logSort')?document.getElementById('logSort').value:'newest';
+  let _calls=filteredLogCalls();
   if(!_calls.length){body.innerHTML='لا توجد مكالمات متطابقة مع البحث.';return;} 
-
-  const sorted = [..._calls].sort((a,b) => {
-    if(sortVal === 'oldest') return a.dt - b.dt;
-    if(sortVal === 'branch') return (a.branch||'').localeCompare(b.branch||'') || b.dt - a.dt;
-    if(sortVal === 'ctype')  return (a.ctype||'').localeCompare(b.ctype||'') || b.dt - a.dt;
-    if(sortVal === 'gender') return (a.gender||'').localeCompare(b.gender||'') || b.dt - a.dt;
-    if(sortVal === 'nat')    return (a.nat||'').localeCompare(b.nat||'') || b.dt - a.dt;
-    if(sortVal === 'loc')    return (a.loc||'').localeCompare(b.loc||'') || b.dt - a.dt;
-    if(sortVal === 'emo')    return (a.emo||'').localeCompare(b.emo||'') || b.dt - a.dt;
-    if(sortVal === 'src')    return (a.src||'').localeCompare(b.src||'') || b.dt - a.dt;
-    return b.dt - a.dt; 
-  });
-
-  let html=''; 
-  let currentDay = '';
-
+  const sorted=[..._calls].sort((a,b)=>{ if(sortVal==='oldest') return a.dt-b.dt; if(sortVal==='branch') return (a.branch||'').localeCompare(b.branch||'')||b.dt-a.dt; if(sortVal==='ctype') return (a.ctype||'').localeCompare(b.ctype||'')||b.dt-a.dt; return b.dt-a.dt; });
+  let html=''; let currentDay='';
   sorted.forEach(c=>{ 
-    // نظام التجميع حسب اليوم (إذا كان الترتيب "الأحدث")
-    if (sortVal === 'newest') {
-        let dayStr = fmtDate(c.dt);
-        if (currentDay !== dayStr) {
-            currentDay = dayStr;
-            // إضافة مسافة بصرية وعنوان اليوم بخط عريض
-            html += `<div style="font-size:16px; font-weight:800; color:var(--text); margin-top:24px; margin-bottom:12px; border-bottom:2px solid var(--border); padding-bottom:6px;">(${dayStr})</div>`;
-        }
-    }
-
-    let notesSnippet = '';
-    if(c.notes && c.notes.trim() !== '') {
-        notesSnippet = c.notes.trim().substring(0, 150);
-        if(c.notes.trim().length > 150) notesSnippet += '...';
-        // إضافة التفاصيل في سطر جديد بلون أخف قليلاً لتمييزها
-        notesSnippet = `<br><span style="color:var(--t2); font-size:13px;">↳ التفاصيل: ${notesSnippet}</span>`;
-    }
-
-    // إدراج المكالمة مع مسافة بصرية (margin-bottom: 20px) بين كل مكالمة والأخرى
-    html += `<div style="margin-bottom:20px; line-height:1.8;">${briefLine(c)}${notesSnippet}</div>`;
+    if(sortVal==='newest'){ let dayStr=fmtDate(c.dt); if(currentDay!==dayStr){ currentDay=dayStr; html+=`<div style="font-size:16px; font-weight:800; color:var(--text); margin-top:24px; margin-bottom:12px; border-bottom:2px solid var(--border); padding-bottom:6px;">(${dayStr})</div>`; } }
+    let notesSnippet=''; if(c.notes&&c.notes.trim()!==''){ notesSnippet=c.notes.trim().substring(0,150); if(c.notes.trim().length>150) notesSnippet+='...'; notesSnippet=`<br><span style="color:var(--t2); font-size:13px;">↳ التفاصيل: ${notesSnippet}</span>`; }
+    html+=`<div style="margin-bottom:20px; line-height:1.8;">${briefLine(c)}${notesSnippet}</div>`; 
   }); 
-  
-  body.innerHTML = html; 
+  body.innerHTML=html; 
 }
-function copyAllText(){ 
-  const body=document.getElementById('textViewBody'); 
-  // استخدام innerText لضمان نسخ المسافات البصرية والأسطر الجديدة
-  const textToCopy = body.innerText || body.textContent;
-  
-  if(!textToCopy.trim()) return toast('لا يوجد نص للنسخ','err'); 
-  
-  navigator.clipboard.writeText(textToCopy).then(()=>toast('تم نسخ النص كاملاً','ok')).catch(()=>{ 
-    const ta=document.createElement('textarea'); 
-    ta.value=textToCopy; 
-    document.body.appendChild(ta); 
-    ta.select(); 
-    document.execCommand('copy'); 
-    document.body.removeChild(ta); 
-    toast('تم نسخ النص كاملاً','ok'); 
-  }); 
-}
-// ===== APP INITIALIZATION =====
-window.addEventListener('DOMContentLoaded', async () => {
+function copyAllText(){ const body=document.getElementById('textViewBody'); const textToCopy=body.innerText||body.textContent; if(!textToCopy.trim()) return toast('لا يوجد نص للنسخ','err'); navigator.clipboard.writeText(textToCopy).then(()=>toast('تم نسخ النص كاملاً','ok')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=textToCopy; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('تم نسخ النص كاملاً','ok'); }); }
+
+// ===== APP INIT =====
+window.initAppAfterFirebase = async function() {
   try {
     await initDB();
-    calls = await getAllCallsDB();
-    calls.sort((a,b) => b.dt - a.dt);
     
+    // محاولة تحميل البيانات من Firestore أولاً
+    let fsData = null;
+    if (window._firestoreReady) {
+      setFBStatus('online');
+      try {
+        fsData = await getAllCallsFirestore();
+      } catch(e) {
+        setFBStatus('error');
+        fsData = null;
+      }
+    }
+
+    if (fsData && fsData.length > 0) {
+      // دمج بيانات Firestore مع IndexedDB المحلي
+      calls = fsData;
+      // تحديث IndexedDB بأحدث البيانات من Firestore
+      for(const rec of fsData) {
+        await saveCallDB(rec).catch(()=>{});
+      }
+    } else {
+      // استخدام البيانات المحلية
+      calls = await getAllCallsDB();
+    }
+    
+    calls.sort((a,b) => b.dt - a.dt);
     updateSeqLabel();
     renderAllGroups();
     renderFilteredLog();
     updateBadge();
 
   } catch (error) {
-    console.error("خطأ أثناء تهيئة قاعدة البيانات:", error);
-    toast("حدث خطأ في تحميل البيانات المحفوظة", "err");
+    console.error("خطأ أثناء تهيئة التطبيق:", error);
+    // محاولة تحميل البيانات المحلية كاحتياط
+    try {
+      calls = await getAllCallsDB();
+      calls.sort((a,b) => b.dt - a.dt);
+      renderAllGroups();
+      renderFilteredLog();
+      updateBadge();
+    } catch(e2) {
+      toast("حدث خطأ في تحميل البيانات", "err");
+    }
   }
+};
+
+// في حالة لم يتم تحميل Firebase module (خطأ في الاتصال)
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(async () => {
+    if (!window._firestoreReady && calls.length === 0) {
+      setFBStatus('error');
+      try {
+        await initDB();
+        calls = await getAllCallsDB();
+        calls.sort((a,b) => b.dt - a.dt);
+        updateSeqLabel();
+        renderAllGroups();
+        renderFilteredLog();
+        updateBadge();
+      } catch(e) {}
+    }
+  }, 3000);
 });
 </script>
 </body>
