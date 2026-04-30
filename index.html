@@ -1852,8 +1852,12 @@ function getStepItems(step) {
   if (step.items) return step.items;
   if (step.itemsKey) return S[step.itemsKey] || [];
   if (step.id === 'topic') {
-    if (sel.ctype && S.topicMap[sel.ctype]) {
-      return S.topicMap[sel.ctype];
+    if (sel.ctype) {
+      // إصلاح: إعادة بناء المواضيع الافتراضية إذا كانت مفقودة
+      if (!S.topicMap[sel.ctype] || S.topicMap[sel.ctype].length === 0) {
+        S.topicMap[sel.ctype] = [...(S_DEFAULT.topicMap[sel.ctype] || [])];
+      }
+      return S.topicMap[sel.ctype] || [];
     }
     return [];
   }
