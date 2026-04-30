@@ -1,780 +1,13 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-</script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js">
-</script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getFirestore, collection, doc, setDoc, getDoc, getDocs,
-    deleteDoc, query, orderBy, enableIndexedDbPersistence,
-    onSnapshot, serverTimestamp, writeBatch, limit, where
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCWVLIZMsWFeGvBjU69iQeHc4LkXx_TgLg",
-    authDomain: "customer-service-ddb34.firebaseapp.com",
-    projectId: "customer-service-ddb34",
-    storageBucket: "customer-service-ddb34.firebasestorage.app",
-    messagingSenderId: "109576870374",
-    appId: "1:109576870374:web:e1a4c7dc726543ebc7de27"
-  };
-
-  try {
-    const app = initializeApp(firebaseConfig);
-    const firestore = getFirestore(app);
-    enableIndexedDbPersistence(firestore).catch((err) => {
-      console.warn('Persistence failed:', err.code);
-    });
-
-    window._fsCollection = (name) => collection(firestore, name);
-    window._fsDoc = (colRef, id) => doc(colRef, id);
-    window._fsSetDoc = setDoc;
-    window._fsGetDoc = getDoc;
-    window._fsGetDocs = getDocs;
-    window._fsDeleteDoc = deleteDoc;
-    window._fsQuery = query;
-    window._fsOrderBy = orderBy;
-    window._fsLimit = limit;
-    window._fsWhere = where;
-    window._fsWriteBatch = () => writeBatch(firestore);
-    window._fsServerTimestamp = serverTimestamp;
-    window._fsOnSnapshot = onSnapshot;
-    window._firestoreReady = true;
-
-    window._fsGetMetaDoc = () => doc(collection(firestore, '_meta'), 'lastUpdate');
-    console.log('Firebase initialized ✓');
-  } catch (e) {
-    console.error('Firebase init error:', e);
-    window._firestoreReady = false;
-  }
-
-  window.addEventListener('load', () => {
-    document.dispatchEvent(new CustomEvent('firebaseReady'));
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>اي ام سبيشل</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #f8fafc;
-  --white: #ffffff;
-  --border: #e2e8f0;
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --al: #e0e7ff;
-  --green: #10b981;
-  --gl: #d1fae5;
-  --red: #ef4444;
-  --rl: #fee2e2;
-  --amber: #f59e0b;
-  --ambl: #fef3c7;
-  --purple: #8b5cf6;
-  --pl: #ede9fe;
-  --pink: #ec4899;
-  --pkl: #fce7f3;
-  --teal: #06b6d4;
-  --tl: #cffafe;
-  --text: #0f172a;
-  --t2: #475569;
-  --tl2: #94a3b8;
-  --r: 16px;
-  --r-btn: 12px;
-  --r-input: 12px;
-  --ss: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --s: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
-  --sm: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-hover: 0 10px 20px -5px rgba(99, 102, 241, 0.3);
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'Cairo', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  direction: rtl;
-  font-size: 14px;
-  -webkit-font-smoothing: antialiased;
-}
-
-.hdr {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-  padding: 0 28px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 68px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--ss);
-}
-
-.logo { display: flex; align-items: center; gap: 12px; }
-
-.logo-txt {
-  font-family: 'Tajawal', sans-serif;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.3px;
-  transition: color 0.5s ease;
-}
-
-/* استبدال الساعة بزر الإعدادات */
-.hdr-settings-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  cursor: pointer;
-  color: var(--t2);
-  transition: all 0.2s ease;
-  box-shadow: var(--ss);
-}
-
-.hdr-settings-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--al);
-}
-
-.hdr-settings-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.tabs-nav {
-  display: flex;
-  gap: 8px;
-  padding: 16px 28px;
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--ss);
-  overflow-x: auto;
-  white-space: nowrap;
-}
-
-.tab-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  padding: 10px 24px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--t2);
-  cursor: pointer;
-  border-radius: 100px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.tab-btn:hover:not(.active) { background: var(--bg); color: var(--text); }
-
-.tab-btn.active {
-  background: var(--text);
-  color: var(--white);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-}
-
-.cbadge {
-  display: inline-block;
-  background: var(--accent);
-  color: #fff;
-  border-radius: 20px;
-  padding: 2px 10px;
-  font-size: 11px;
-  font-weight: 800;
-  margin-right: 6px;
-  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
-}
-
-.tab-content { display: none; padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
-
-.tab-content.active { display: block; animation: fadeIn 0.4s ease; }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.fc, .sc, .ch, .cust-block, #textViewPanel {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  box-shadow: var(--s);
-  transition: box-shadow 0.3s ease;
-}
-
-.fc:hover, .sc:hover, .ch:hover { box-shadow: var(--sm); }
-
-.fc { padding: 24px; margin-bottom: 16px; }
-
-.stitle {
-  font-family: 'Tajawal', sans-serif;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--tl2);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px; }
-
-.frow:last-of-type { margin-bottom: 0; }
-
-.frow.t3 { grid-template-columns: 1fr 1fr 1fr; }
-
-.frow.s1 { grid-template-columns: 1fr; }
-
-.fg { display: flex; flex-direction: column; gap: 8px; }
-
-.flbl { font-size: 13px; font-weight: 700; color: var(--t2); }
-
-.fi, .fta, .min {
-  background: #f1f5f9;
-  border: 1.5px solid transparent;
-  border-radius: var(--r-input);
-  padding: 12px 16px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  outline: none;
-  transition: all 0.25s ease;
-  width: 100%;
-  height: 44px;
-}
-
-.fta { resize: vertical; min-height: 100px; height: auto; line-height: 1.6; }
-
-.fi:focus, .fta:focus, .min:focus {
-  background: var(--white);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--al);
-}
-
-.fi::placeholder, .fta::placeholder { color: var(--tl2); font-weight: 500; }
-
-.bg { display: flex; flex-wrap: wrap; gap: 8px; }
-
-/* أزرار متناسقة الارتفاع */
-.ob, .btn-s, .btn-p, .dropbtn, .select-sort {
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-.ob {
-  background: var(--white);
-  border: 1.5px solid var(--border);
-  border-radius: var(--r-btn);
-  padding: 8px 16px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--t2);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  line-height: 1;
-}
-
-.ob:hover { border-color: var(--tl2); color: var(--text); background: var(--bg); }
-.ob:active { transform: scale(0.97); }
-
-.ob.sel {
-  background: var(--text);
-  border-color: var(--text);
-  color: var(--white);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
-}
-
-.arow { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
-
-.btn-p {
-  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-  border: none;
-  border-radius: var(--r-btn);
-  padding: 8px 20px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-  line-height: 1;
-}
-
-.btn-p:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
-.btn-p:active { transform: translateY(0); }
-
-.btn-s {
-  background: var(--white);
-  border: 1.5px solid var(--border);
-  border-radius: var(--r-btn);
-  padding: 8px 16px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--t2);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  line-height: 1;
-}
-
-.btn-s:hover { border-color: var(--text); color: var(--text); background: var(--bg); }
-
-.dropdown { position: relative; display: inline-block; }
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: var(--white);
-  min-width: 180px;
-  box-shadow: var(--sm);
-  z-index: 1000;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  overflow: hidden;
-  right: 0;
-  top: 110%;
-}
-
-.dropdown-content button, .dropdown-content select {
-  width: 100%;
-  text-align: right;
-  background: none;
-  border: none;
-  padding: 10px 16px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--t2);
-  cursor: pointer;
-  transition: 0.2s;
-  border-radius: 0;
-}
-
-.dropdown-content button:hover { background-color: var(--bg); color: var(--accent); }
-
-.dropdown:hover .dropdown-content { display: block; animation: fadeIn 0.2s ease; }
-
-.dropbtn {
-  padding: 8px 16px;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  background: var(--white);
-  font-family: 'Cairo', sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.dropbtn:hover { border-color: var(--accent); color: var(--accent); }
-
-.toast {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-100px);
-  color: #fff;
-  padding: 12px 24px;
-  border-radius: 100px;
-  font-weight: 700;
-  font-size: 14px;
-  box-shadow: var(--sm);
-  z-index: 3000;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  background: var(--text);
-  backdrop-filter: blur(8px);
-}
-
-.toast.ok { background: var(--green); }
-.toast.err { background: var(--red); }
-.toast.show { transform: translateX(-50%) translateY(0); }
-
-.log-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
-
-.log-title {
-  font-family: 'Tajawal', sans-serif;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--text);
-}
-
-.select-sort {
-  padding: 8px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  background: var(--white);
-  font-family: 'Cairo', sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  color: #64748b;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s ease;
-  min-width: 100px;
-}
-
-.select-sort:hover { border-color: var(--accent); color: var(--accent); }
-
-.cust-block { margin-bottom: 16px; }
-
-.cust-hdr {
-  padding: 12px 18px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--t2);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cust-ph {
-  font-family: 'Cairo', sans-serif;
-  direction: ltr;
-  color: var(--accent);
-  font-weight: 800;
-}
-
-.cc { border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
-.cc:last-child { border-bottom: none; }
-.cc:hover { background: #f8fafc; }
-
-.cc.standalone {
-  margin-bottom: 12px;
-  border-radius: var(--r);
-  border: 1px solid var(--border);
-  box-shadow: var(--ss);
-}
-
-.cc-top { padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
-
-.cc-summary {
-  font-size: 13px;
-  color: var(--t2);
-  font-weight: 600;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cc-seq {
-  font-size: 11px;
-  font-weight: 800;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-variant-numeric: tabular-nums;
-  direction: ltr;
-  color: #fff;
-}
-
-.cc-seq.ct-complaint { background: var(--red); }
-.cc-seq.ct-inquiry { background: var(--accent); }
-.cc-seq.ct-request { background: var(--green); }
-
-.cc-time { font-size: 13px; font-weight: 800; color: var(--tl2); flex-shrink: 0; }
-
-.cc-dtl { padding: 0 18px 18px; border-top: 1px solid var(--border); display: none; }
-.cc-dtl.open { display: block; animation: fadeIn 0.3s ease; }
-
-.dgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
-
-.di {
-  background: var(--bg);
-  border-radius: 10px;
-  padding: 10px 14px;
-  border: 1px solid rgba(226, 232, 240, 0.5);
-}
-
-.dl { font-size: 11px; font-weight: 800; color: var(--tl2); margin-bottom: 4px; }
-.dv { font-size: 13px; font-weight: 700; color: var(--text); }
-
-.dnotes {
-  background: var(--ambl);
-  border-left: 3px solid var(--amber);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #925c0e;
-  line-height: 1.7;
-  margin-bottom: 12px;
-}
-
-.trow {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.tline { display: flex; flex-wrap: wrap; gap: 1px; width: 100%; border-bottom: 1px solid var(--border); background: var(--border); }
-.tline:last-child { border-bottom: none; }
-
-.tline .ob {
-  flex: 1 1 auto;
-  min-width: 70px;
-  white-space: normal;
-  text-align: center;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  font-family: 'Cairo', sans-serif;
-  font-weight: 700;
-  border-radius: 0;
-  font-size: 13px;
-  border: none;
-  padding: 10px 6px;
-  background: var(--white);
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tl-wide-blue .ob { color: #4338ca; }
-.tl-wide-blue .ob:hover { background: #eef2ff; color: #3730a3; }
-.tl-wide-blue .ob.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-.tl-contrast-dark .ob { color: #1e293b; font-weight: 800; }
-.tl-contrast-dark .ob:hover { background: #f1f5f9; color: #0f172a; }
-.tl-contrast-dark .ob.sel { background: var(--text); color: #fff; }
-
-.tl-outline-red .ob { color: #dc2626; }
-.tl-outline-red .ob:hover { background: #fef2f2; color: #b91c1c; }
-.tl-outline-red .ob.sel { background: var(--red); color: #fff; }
-
-.tl-pill-blue .ob { color: #7c3aed; }
-.tl-pill-blue .ob:hover { background: #f5f3ff; color: #6d28d9; }
-.tl-pill-blue .ob.sel { background: var(--purple); color: #fff; }
-
-.tl-teal-text .ob { color: #0f766e; }
-.tl-teal-text .ob:hover { background: #f0fdfa; color: #115e59; }
-.tl-teal-text .ob.sel { background: #0f766e; color: #fff; }
-
-.tl-solid-blue .ob { color: #1d4ed8; }
-.tl-solid-blue .ob:hover { background: #eff6ff; color: #1e40af; }
-.tl-solid-blue .ob.sel { background: #2563eb; color: #fff; }
-
-.tl-bold-indigo .ob { color: #3730a3; }
-.tl-bold-indigo .ob:hover { background: #eef2ff; color: #312e81; }
-.tl-bold-indigo .ob.sel { background: #4338ca; color: #fff; }
-
-.tl-wide-outline .ob { color: #b45309; }
-.tl-wide-outline .ob:hover { background: #fffbeb; color: #92400e; }
-.tl-wide-outline .ob.sel { background: var(--amber); color: #fff; }
-
-.tl-solid-teal .ob { color: #047857; }
-.tl-solid-teal .ob:hover { background: #ecfdf5; color: #065f46; }
-.tl-solid-teal .ob.sel { background: var(--teal); color: #fff; }
-
-.tline-label {
-  display: flex;
-  align-items: center;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--tl2);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.tline.dim { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
-
-.tag-step-container {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  background: var(--white);
-  box-shadow: var(--s);
-  margin-bottom: 16px;
-  animation: fadeIn 0.3s ease;
-}
-
-.tag-step-label {
-  font-family: 'Tajawal', sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--t2);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.tag-step-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.tag-step-buttons .ob {
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.tag-step-nav { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
-
-.sg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-.sc { padding: 24px; }
-.slbl { font-size: 13px; font-weight: 700; color: var(--t2); margin-bottom: 10px; }
-.sval { font-family: 'Tajawal', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; }
-.sb { height: 4px; border-radius: 4px; margin-top: 16px; opacity: 0.2; }
-
-.cbl .sval { color: var(--accent); }
-.cbl .sb { background: var(--accent); }
-.cgr .sval { color: var(--green); }
-.cgr .sb { background: var(--green); }
-.crd .sval { color: var(--red); }
-.crd .sb { background: var(--red); }
-
-.cr { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.ch { padding: 24px; overflow-x: auto; }
-.cht {
-  font-family: 'Tajawal', sans-serif;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text);
-  margin-bottom: 18px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-/* زر الإعدادات العائم */
-.btn-maint {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 100px;
-  padding: 10px 20px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--t2);
-  cursor: pointer;
-  box-shadow: var(--s);
-  transition: all 0.25s ease;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-}
-
-.btn-maint:hover { box-shadow: var(--sm); transform: translateY(-2px); color: var(--text); }
-
-.summ-box {
-  display: none;
-  margin-top: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px;
-  font-size: 14px;
-  line-height: 2;
-  color: var(--text);
-  font-weight: 600;
-}
-
-.summ-box.open { display: block; animation: fadeIn 0.3s ease; }
-
-.cc-act-row {
-  display: none;
-  padding: 8px 18px;
-  gap: 8px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
-  background: #f8fafc;
-}
-
-.cc-act-row button {
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--white);
-  cursor: pointer;
-  transition: 0.2s;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-wa {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #25D366;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  height: 32px;
-}
-
-.btn-wa:hover { background: #1ebe5d; transform: scale(1.02); }
-
-/* تحسين شريط التمرير */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-/* تحسين العرض على الجوال */
-@media(max-width:900px) {
-  .hdr, .tabs-nav, .tab-content { padding-right: 16px; padding-left: 16px; }
-  .frow, .frow.t3, .sg, .cr { grid-template-columns: 1fr; }
-  .dgrid { grid-template-columns: 1fr 1fr; }
-  .sg { grid-template-columns: 1fr 1fr; }
-  .fc .arow { flex-wrap: wrap; }
-}
-
-@media(max-width:400px) {
-  .sg { grid-template-columns: 1fr; }
-  .dgrid { grid-template-columns: 1fr; }
-}
-</style>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -782,74 +15,106 @@ body {
   <div class="logo">
     <span class="logo-txt" id="logoTxt">اي ام سبيشل</span>
   </div>
-  <!-- استبدال الساعة بزر الإعدادات -->
-  <button class="hdr-settings-btn" onclick="switchTab('maint', document.querySelector('[data-tab=maint]'))" title="الإعدادات">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-  </button>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="hdr-clock" style="display:flex;align-items:center;gap:4px;padding:4px 12px;">
+      <button onclick="changeFontSize(-1)" title="تصغير الخط" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:15px;font-weight:800;padding:4px;transition:color .2s;">−</button>
+      <span id="fontSizeLabel" style="font-size:13px;color:var(--text);min-width:40px;text-align:center;">100%</span>
+      <button onclick="changeFontSize(1)" title="تكبير الخط" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:15px;font-weight:800;padding:4px;transition:color .2s;">+</button>
+    </div>
+    <div class="hdr-clock" id="clock">--:--</div>
+  </div>
 </header>
 
 <nav class="tabs-nav">
   <button class="tab-btn active" data-tab="form" onclick="switchTab('form',this)">تسجيل مكالمة</button>
   <button class="tab-btn" data-tab="log" onclick="switchTab('log',this)">سجل المكالمات <span id="logBadge" style="display:none" class="cbadge">0</span></button>
   <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics',this)">التحليلات</button>
+  <button class="tab-btn" data-tab="maint" onclick="switchTab('maint',this)">الإعدادات</button>
 </nav>
 
+<!-- TAB: FORM -->
 <div class="tab-content active" id="tab-form">
   <div class="fc">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:nowrap;position:relative;overflow-x:auto;">
-      <span id="seqLabel" style="display:none;font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
-      <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:8px 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+      <span id="seqLabel" style="font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
+
+      <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:8px 10px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+
       <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:8px 14px;font-weight:800;font-size:15px;">#</button>
 
-      <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
+      <button class="ob" style="position:relative;padding:8px 16px;overflow:hidden;">
         <span id="dateBtnText">التاريخ</span>
-        <input type="date" id="datePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDatePick(this.value)" />
+        <input type="date" id="datePicker" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;" onchange="onDatePick(this.value)" />
       </button>
 
-      <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
+      <button class="ob" style="position:relative;padding:8px 16px;overflow:hidden;">
         <span id="timeBtnText">الوقت</span>
-        <input type="time" id="timePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onTimePick(this.value)" />
+        <input type="time" id="timePicker" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;" onchange="onTimePick(this.value)" />
       </button>
 
-      <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 18px;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
+      <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 18px;" title="حفظ">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      </button>
     </div>
+
+    <!-- Date Settings Panel -->
     <div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <span id="fixedDateDisplay" style="font-size:14px;font-weight:800;color:var(--text);flex:1;min-width:60px;">—</span>
-        <button class="btn-p" style="position:relative; padding:8px 16px; font-size:12px; overflow:hidden;">
+        <button class="btn-p" style="position:relative;padding:8px 16px;font-size:12px;overflow:hidden;">
           <span>تعديل</span>
-          <input type="date" id="defaultDatePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDefaultDatePick(this.value)" />
+          <input type="date" id="defaultDatePicker" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;" onchange="onDefaultDatePick(this.value)" />
         </button>
-        <button id="resetDefaultDateBtn" onclick="resetDefaultDate()" class="btn-s" style="padding:8px 16px; font-size:12px; color:var(--teal); border-color:var(--teal);">إزالة ↺</button>
+        <button onclick="resetDefaultDate()" class="btn-s" style="padding:8px 16px;font-size:12px;color:var(--teal);border-color:var(--teal);">إزالة ↺</button>
       </div>
     </div>
 
-    <div class="fg" id="step-phone-section">
-      <input type="tel" inputmode="numeric" class="fi" id="phone" placeholder="05XXXXXXXX" maxlength="10" oninput="onPhoneInput(this.value)" style="font-size:18px;font-weight:800;letter-spacing:1px;" />
+    <!-- Offline badge -->
+    <div id="offlineQueueStatus" style="display:none;align-items:center;gap:8px;background:var(--ambl);border:1px solid var(--amber);border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:13px;font-weight:700;color:#92400e;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/><path d="M12 8v4l3 3"/></svg>
+      <span id="offlineQueueCount">0 في الانتظار</span>
+      <button onclick="OfflineQ.sync()" style="background:var(--amber);border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:800;color:#fff;cursor:pointer;margin-right:auto;">مزامنة</button>
     </div>
-    <div class="fg" id="step-details-section" style="margin-top:16px; display:none;">
+
+    <!-- Step 1: Phone -->
+    <div class="fg" id="step-phone-section">
+      <input type="tel" inputmode="numeric" class="fi" id="phone" placeholder="05XXXXXXXX" maxlength="10"
+        oninput="onPhoneInput(this.value)"
+        style="font-size:18px;font-weight:800;letter-spacing:1px;" />
+    </div>
+
+    <!-- Step 2: Details -->
+    <div class="fg" id="step-details-section" style="margin-top:16px;display:none;">
       <textarea class="fta" id="details" placeholder="ماذا قال العميل...؟"></textarea>
     </div>
 
-    <!-- ===== TAGS PANEL مع الخطوات المتتابعة (تحت حقل التفاصيل) ===== -->
-    <div id="tagsPanel" style="display:none;margin-top:16px;margin-bottom:20px;" data-step-controlled="true">
+    <!-- Step 3: Tags Panel -->
+    <div id="tagsPanel" style="display:none;margin-top:16px;margin-bottom:20px;">
       <div id="tagsStepContainer"></div>
       <div id="tagsStepNav" style="display:flex;gap:8px;margin-top:12px;justify-content:space-between;">
         <button class="btn-s" id="tagsPrevBtn" onclick="tagsStepPrev()" style="display:none;">← السابق</button>
         <span id="tagsStepIndicator" style="font-size:12px;font-weight:700;color:var(--tl2);align-self:center;"></span>
         <button class="btn-s" id="tagsSkipBtn" onclick="tagsStepNext()">تخطي ←</button>
       </div>
-      <div class="cond" id="condComp" style="margin-top:12px;display:none;"><input type="text" class="fi" id="compNo" placeholder="رقم الشكوى..." /></div>
-      <div class="cond" id="condReq" style="margin-top:12px;display:none;"><input type="text" class="fi" id="reqNo" placeholder="رقم الطلب..." /></div>
+      <div id="condComp" style="margin-top:12px;display:none;">
+        <input type="text" class="fi" id="compNo" placeholder="رقم الشكوى..." />
+      </div>
+      <div id="condReq" style="margin-top:12px;display:none;">
+        <input type="text" class="fi" id="reqNo" placeholder="رقم الطلب..." />
+      </div>
     </div>
 
-    <div class="notice" id="custNotice" style="margin-top:12px; display:none; align-items:center; gap:10px; background:var(--al); border-radius:12px; padding:12px 16px; font-weight:700; color:var(--accent);">
-      <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
-      <span id="custNoticeText">عميل مسجل</span>
-    </div>
-    <div id="nextBtnWrap" style="margin-top:16px; display:flex; justify-content:flex-start;">
-      <button class="btn-p" id="nextStepBtn" onclick="goNextStep()" style="padding:10px 28px; font-size:14px; display:flex; align-items:center; gap:8px; height:44px;">
+    <!-- Customer notice -->
+    <div id="custNotice" style="margin-top:12px;display:none;align-items:center;gap:10px;background:var(--al);border-radius:12px;padding:12px 16px;font-weight:700;color:var(--accent);"></div>
+
+    <!-- Next button -->
+    <div id="nextBtnWrap" style="margin-top:16px;display:flex;justify-content:flex-start;">
+      <button class="btn-p" id="nextStepBtn" onclick="goNextStep()" style="padding:10px 28px;font-size:14px;display:flex;align-items:center;gap:8px;">
         التالي
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
@@ -857,20 +122,20 @@ body {
   </div>
 </div>
 
+<!-- TAB: LOG -->
 <div class="tab-content" id="tab-log">
-  <div class="log-toolbar">
+  <div class="log-toolbar" style="flex-wrap:wrap;gap:16px;">
     <div class="log-title">سجل المكالمات <span class="cbadge" id="logCount" style="margin-right:8px;">0</span></div>
     <div style="display:flex;gap:12px;align-items:center;flex:1;min-width:250px;">
       <input type="search" id="logSearch" placeholder="بحث برقم الجوال، التسلسل، التفاصيل..." oninput="renderFilteredLog()" class="fi" style="padding:10px 16px;" />
     </div>
-
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:15px;">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:15px;">
       <div class="dropdown">
         <button class="dropbtn">عرض ▾</button>
         <div class="dropdown-content">
-          <div style="padding: 8px 16px; border-bottom: 1px solid var(--border);">
-            <label style="font-size:11px; color:var(--tl2); font-weight:800; display:block; margin-bottom:4px;">ترتيب السجل</label>
-            <select id="logSort" onchange="renderFilteredLog()" style="width: 100%; padding: 4px; border: none; outline: none; background: transparent; font-weight: 700; cursor: pointer; color: var(--text);">
+          <div style="padding:8px 16px;border-bottom:1px solid var(--border);">
+            <label style="font-size:11px;color:var(--tl2);font-weight:800;display:block;margin-bottom:4px;">ترتيب السجل</label>
+            <select id="logSort" onchange="renderFilteredLog()" style="width:100%;padding:4px;border:none;outline:none;background:transparent;font-weight:700;cursor:pointer;color:var(--text);">
               <option value="newest">الأحدث</option>
               <option value="oldest">الأقدم</option>
               <option value="branch">الفرع</option>
@@ -878,17 +143,14 @@ body {
               <option value="src">المصدر</option>
             </select>
           </div>
-          <button id="btnGroupMode" onclick="toggleGroupMode()" style="text-align: right; display: flex; justify-content: space-between; align-items: center;">
-            تجميع البيانات
-            <span id="groupModeIcon" style="color:var(--accent); font-weight:bold;"></span>
+          <button id="btnGroupMode" onclick="toggleGroupMode()" style="text-align:right;display:flex;justify-content:space-between;align-items:center;">
+            تجميع البيانات <span id="groupModeIcon" style="color:var(--accent);font-weight:bold;"></span>
           </button>
-          <button id="btnTextView" onclick="toggleTextView()" style="text-align: right; display: flex; justify-content: space-between; align-items: center;">
-            عرض نصي
-            <span id="textViewIcon" style="color:var(--accent); font-weight:bold;"></span>
+          <button id="btnTextView" onclick="toggleTextView()" style="text-align:right;display:flex;justify-content:space-between;align-items:center;">
+            عرض نصي <span id="textViewIcon" style="color:var(--accent);font-weight:bold;"></span>
           </button>
         </div>
       </div>
-
       <div class="dropdown">
         <button class="dropbtn">البيانات ▾</button>
         <div class="dropdown-content">
@@ -897,26 +159,26 @@ body {
           <button onclick="document.getElementById('importFile').click()">استيراد البيانات</button>
         </div>
       </div>
-
-      <input type="file" id="importFile" accept=".xlsx, .xls, .csv" style="display:none" onchange="handleImport(event)">
+      <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)">
     </div>
   </div>
 
-  <div id="textViewPanel" style="display:none;margin-bottom:24px;">
+  <div id="textViewPanel" style="display:none;margin-bottom:24px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--s);">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
       <span style="font-family:'Tajawal',sans-serif;font-size:14px;font-weight:800;color:var(--text);">تقرير مبسط</span>
-      <button class="btn-s" onclick="copyAllText()" style="padding:6px 14px; font-size:12px;">نسخ الكل</button>
+      <button class="btn-s" onclick="copyAllText()" style="padding:6px 14px;font-size:12px;">نسخ الكل</button>
     </div>
     <div id="textViewBody" style="padding:20px;font-size:14px;line-height:2.2;color:var(--t2);direction:rtl;white-space:pre-wrap;max-height:480px;overflow-y:auto;"></div>
   </div>
   <div id="logWrap"></div>
 </div>
 
+<!-- TAB: ANALYTICS -->
 <div class="tab-content" id="tab-analytics">
-  <div class="sc" style="margin-bottom:24px; padding:16px 20px;">
+  <div class="sc" style="margin-bottom:24px;padding:16px 20px;">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <input type="text" id="analyticsSearch" placeholder="اكتب وسم للتصفية ..." onkeydown="if(event.key==='Enter') addAnalyticsTag()" class="fi" style="flex:1; min-width: 200px; padding:10px 16px;" />
-      <div style="display:flex; gap:8px;">
+      <input type="text" id="analyticsSearch" placeholder="اكتب وسم للتصفية ..." onkeydown="if(event.key==='Enter') addAnalyticsTag()" class="fi" style="flex:1;min-width:200px;padding:10px 16px;" />
+      <div style="display:flex;gap:8px;">
         <button onclick="addAnalyticsTag()" class="btn-p" style="padding:10px 24px;">تصفية</button>
         <button onclick="clearFilters()" class="btn-s" style="padding:10px 20px;">مسح</button>
       </div>
@@ -925,12 +187,12 @@ body {
     <div id="suggestedTagsRow" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;"></div>
   </div>
 
-  <div id="branchAnalyticsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;"></div>
+  <div id="branchAnalyticsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;"></div>
 
   <div class="cr" style="grid-template-columns:1fr;margin-bottom:24px;">
     <div class="ch">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:12px;">
-        <div class="cht" style="margin-bottom:0; border-bottom:none; padding-bottom:0;">تحليل المكالمات عبر الزمن</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+        <div class="cht" style="margin-bottom:0;border-bottom:none;padding-bottom:0;">تحليل المكالمات عبر الزمن</div>
         <select id="timeScaleSelect" class="select-sort" onchange="updateLineChart()">
           <option value="day">يوم</option>
           <option value="week">أسبوع</option>
@@ -938,7 +200,7 @@ body {
           <option value="year">سنة</option>
         </select>
       </div>
-      <div style="position: relative; height: 350px; width: 100%;">
+      <div style="position:relative;height:350px;width:100%;">
         <canvas id="timelineChart"></canvas>
       </div>
     </div>
@@ -952,23 +214,23 @@ body {
   </div>
 
   <div class="cr">
-    <div class="ch"><div class="cht">عدد الأطفال</div><div id="chChild"><div class="ec">لا توجد بيانات</div></div></div>
-    <div class="ch"><div class="cht">نبرة العميل</div><div id="chEmo"><div class="ec">لا توجد بيانات</div></div></div>
-  </div>
-
-  <div class="cr">
-    <div class="ch"><div class="cht">مواقع العملاء</div><div class="bar-c" id="chLoc"><div class="ec">لا توجد بيانات</div></div></div>
-    <div class="ch"><div class="cht">الجنسيات (حسب اللكنة)</div><div class="pw" id="chNat"><div class="ec">لا توجد بيانات</div></div></div>
+    <div class="ch"><div class="cht">عدد الأطفال</div><div id="chChild"><div style="text-align:center;color:var(--tl2);padding:20px;">لا توجد بيانات</div></div></div>
+    <div class="ch"><div class="cht">نبرة العميل</div><div id="chEmo"><div style="text-align:center;color:var(--tl2);padding:20px;">لا توجد بيانات</div></div></div>
   </div>
   <div class="cr">
-    <div class="ch"><div class="cht">توزيع الجنس</div><div class="pw" id="chGen"><div class="ec">لا توجد بيانات</div></div></div>
-    <div class="ch"><div class="cht">مصادر الوصول</div><div class="bar-c" id="chSrc"><div class="ec">لا توجد بيانات</div></div></div>
+    <div class="ch"><div class="cht">مواقع العملاء</div><div id="chLoc"><div style="text-align:center;color:var(--tl2);padding:20px;">لا توجد بيانات</div></div></div>
+    <div class="ch"><div class="cht">الجنسيات (حسب اللكنة)</div><div id="chNat"><div style="text-align:center;color:var(--tl2);padding:20px;">لا توجد بيانات</div></div></div>
+  </div>
+  <div class="cr">
+    <div class="ch"><div class="cht">توزيع الجنس</div><div id="chGen"><div style="text-align:center;color:var(--tl2);padding:20px;">لا توجد بيانات</div></div></div>
+    <div class="ch"><div class="cht">مصادر الوصول</div><div id="chSrc"><div style="text-align:center;color:var(--tl2);padding:20px;">لا توجد بيانات</div></div></div>
   </div>
   <div class="cr" style="grid-template-columns:1fr;">
-    <div class="ch"><div class="cht">توزيع فترة المكالمات</div><div class="pw" id="chTime"><div class="ec">لا توجد بيانات</div></div></div>
+    <div class="ch"><div class="cht">توزيع فترة المكالمات</div><div id="chTime"><div style="text-align:center;color:var(--tl2);padding:20px;">لا توجد بيانات</div></div></div>
   </div>
 </div>
 
+<!-- TAB: MAINTENANCE -->
 <div class="tab-content" id="tab-maint">
   <div class="fc" style="padding:0;">
     <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
@@ -978,1457 +240,41 @@ body {
   </div>
 </div>
 
+<!-- Settings floating button -->
+<button class="btn-maint" onclick="switchTab('maint', document.querySelector('[data-tab=maint]'))" title="الإعدادات">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+</button>
+
 <div class="toast" id="toast"></div>
 
-<div id="post-save-modal" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:var(--white); border-radius:24px; padding:24px; width:100%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; border-bottom: 2px solid var(--al); padding-bottom: 12px;">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="#25D366" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
-      <h3 style="font-family:'Tajawal', sans-serif; font-size:18px; font-weight:800; color:var(--text);">شاعر واتساب — <span id="ps-type" style="color:#25D366;"></span></h3>
+<!-- Post Save Modal -->
+<div id="post-save-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--white);border-radius:24px;padding:24px;width:100%;max-width:500px;box-shadow:0 10px 40px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;border-bottom:2px solid var(--al);padding-bottom:12px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <h3 style="font-family:'Tajawal',sans-serif;font-size:18px;font-weight:800;color:var(--text);">شاعر واتساب — <span id="ps-type" style="color:#25D366;"></span></h3>
     </div>
-    <div id="ps-summary" style="margin-bottom:16px; font-size:13px; color:var(--text); line-height:1.8; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;"></div>
+    <div id="ps-summary" style="margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.8;background:#f8fafc;padding:12px;border-radius:12px;border:1px solid #e2e8f0;"></div>
     <div style="margin-bottom:16px;">
-      <label style="font-weight:bold; font-size:13px; color:var(--text);">أسماء الأطفال (بحد أقصى 10):</label>
-      <div id="ps-children-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+      <label style="font-weight:bold;font-size:13px;color:var(--text);">أسماء الأطفال (بحد أقصى 10):</label>
+      <div id="ps-children-container" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
         <input type="text" class="fi child-name-input" placeholder="اسم الطفل 1" />
       </div>
-      <button class="btn-s" style="margin-top:8px; padding:6px 12px; font-size:12px; border-radius:8px;" onclick="addPSChildInput()">+ إضافة طفل</button>
+      <button class="btn-s" style="margin-top:8px;padding:6px 12px;font-size:12px;border-radius:8px;" onclick="addPSChildInput()">+ إضافة طفل</button>
     </div>
-    <div style="display:flex; flex-wrap:wrap; gap:8px; border-top:1px solid var(--border); padding-top:16px;">
-      <button onclick="psNotifyAdmin()" style="flex:1; color:var(--accent); border:1px solid var(--al); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer; font-family:'Cairo'; height:38px;">الإدارة</button>
-      <button onclick="psNotifyBranch()" style="flex:1; color:var(--amber); border:1px solid var(--ambl); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer; font-family:'Cairo'; height:38px;">الفرع</button>
-      <button onclick="psSendFollowUp()" style="flex:1; color:var(--green); border:1px solid var(--gl); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer; font-family:'Cairo'; height:38px;">العميل</button>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--border);padding-top:16px;">
+      <button onclick="psNotifyAdmin()" style="flex:1;color:var(--accent);border:1px solid var(--al);padding:8px;border-radius:8px;background:var(--white);font-weight:bold;cursor:pointer;font-family:'Cairo';">الإدارة</button>
+      <button onclick="psNotifyBranch()" style="flex:1;color:var(--amber);border:1px solid var(--ambl);padding:8px;border-radius:8px;background:var(--white);font-weight:bold;cursor:pointer;font-family:'Cairo';">الفرع</button>
+      <button onclick="psSendFollowUp()" style="flex:1;color:var(--green);border:1px solid var(--gl);padding:8px;border-radius:8px;background:var(--white);font-weight:bold;cursor:pointer;font-family:'Cairo';">العميل</button>
     </div>
-    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
-      <button onclick="psRedirect1()" style="flex:1; color:#fff; background:var(--accent); border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-family:'Cairo'; height:38px;">توجيه (تطمن)</button>
-      <button onclick="psRedirect2()" style="flex:1; color:#fff; background:var(--teal); border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-family:'Cairo'; height:38px;">توجيه (تطمن + جوال)</button>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+      <button onclick="psRedirect1()" style="flex:1;color:#fff;background:var(--accent);border:none;padding:8px;border-radius:8px;font-weight:bold;cursor:pointer;font-family:'Cairo';">توجيه (تطمن)</button>
+      <button onclick="psRedirect2()" style="flex:1;color:#fff;background:var(--teal);border:none;padding:8px;border-radius:8px;font-weight:bold;cursor:pointer;font-family:'Cairo';">توجيه (تطمن + جوال)</button>
     </div>
-    <button class="btn-s" style="width:100%; margin-top:16px; padding:10px; border-radius:12px; cursor:pointer; height:40px;" onclick="document.getElementById('post-save-modal').style.display='none'">إغلاق</button>
+    <button class="btn-s" style="width:100%;margin-top:16px;padding:10px;border-radius:12px;cursor:pointer;" onclick="document.getElementById('post-save-modal').style.display='none'">إغلاق</button>
   </div>
 </div>
 
-<script>
-Chart.defaults.font.family = 'Cairo';
-
-// ===== FIREBASE LAYER (يعمل فقط عند الاتصال) =====
-const FB = {
-  ready: () => !!(window._firestoreReady && navigator.onLine),
-
-  async save(rec) {
-    if (!FB.ready()) throw new Error('لا يوجد اتصال بالإنترنت');
-    const data = { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) };
-    const col = window._fsCollection('calls');
-    const ref = window._fsDoc(col, rec.seq);
-    await window._fsSetDoc(ref, data);
-  },
-
-  async remove(seq) {
-    if (!FB.ready()) throw new Error('لا يوجد اتصال بالإنترنت');
-    const col = window._fsCollection('calls');
-    const ref = window._fsDoc(col, seq);
-    await window._fsDeleteDoc(ref);
-  },
-
-  async getAll() {
-    if (!FB.ready()) return null;
-    try {
-      const col = window._fsCollection('calls');
-      const snap = await window._fsGetDocs(col);
-      const results = [];
-      snap.forEach(d => { const data = d.data(); results.push({ ...data, dt: new Date(data.dt) }); });
-      return results;
-    } catch (e) { console.warn('FB.getAll failed:', e.message); return null; }
-  },
-
-  async batchSave(recs) {
-    if (!FB.ready() || !recs.length) throw new Error('لا يوجد اتصال أو لا توجد بيانات');
-    const CHUNK = 400;
-    for (let i = 0; i < recs.length; i += CHUNK) {
-      const chunk = recs.slice(i, i + CHUNK);
-      const batch = window._fsWriteBatch();
-      const col = window._fsCollection('calls');
-      chunk.forEach(rec => {
-        const data = { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) };
-        const ref = window._fsDoc(col, rec.seq);
-        batch.set(ref, data);
-      });
-      await batch.commit();
-    }
-    return true;
-  }
-};
-
-// ===== IndexedDB للتخزين المحلي =====
-const DB_NAME = 'CS_DB', STORE_NAME = 'calls', STORE_SETTINGS = 'settings', STORE_CHILD_NAMES = 'childNames';
-let db;
-
-function initDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 2);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains(STORE_NAME)) d.createObjectStore(STORE_NAME, { keyPath: 'seq' });
-      if (!d.objectStoreNames.contains(STORE_SETTINGS)) d.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
-      if (!d.objectStoreNames.contains(STORE_CHILD_NAMES)) d.createObjectStore(STORE_CHILD_NAMES, { keyPath: 'seq' });
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = e => reject(e.target.error);
-  });
-}
-
-function getAllCallsDB() {
-  return new Promise((resolve, reject) => {
-    if (!db) { resolve([]); return; }
-    const tx = db.transaction(STORE_NAME, 'readonly'), store = tx.objectStore(STORE_NAME), req = store.getAll();
-    req.onsuccess = () => resolve(req.result.map(c => ({ ...c, dt: new Date(c.dt) })));
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function saveCallDB(call) {
-  return new Promise((resolve, reject) => {
-    if (!db) { resolve(); return; }
-    const tx = db.transaction(STORE_NAME, 'readwrite'), store = tx.objectStore(STORE_NAME);
-    const rec = { ...call, dt: call.dt instanceof Date ? call.dt.toISOString() : String(call.dt) };
-    const req = store.put(rec); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error);
-  });
-}
-
-function deleteCallDB(seq) {
-  return new Promise((res) => {
-    if (!db) { res(); return; }
-    const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).delete(seq);
-    tx.oncomplete = res; tx.onerror = res;
-  });
-}
-
-function saveAllCallsDB(callsArr) {
-  return new Promise((resolve, reject) => {
-    if (!db) { resolve(); return; }
-    const tx = db.transaction(STORE_NAME, 'readwrite'), store = tx.objectStore(STORE_NAME);
-    store.clear();
-    callsArr.forEach(call => {
-      const rec = { ...call, dt: call.dt instanceof Date ? call.dt.toISOString() : String(call.dt) };
-      store.put(rec);
-    });
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-// ===== SETTINGS =====
-const S_DEFAULT = {
-  nat: ['سعودي','شامي','مصري','اسيوي','غربي'],
-  branches: ['شرق بلازا','مركز المملكة','سلام مول','الرياض جاليري','القصر مول','ذافيو مول'],
-  locs: ['المنزل','السيارة','المول','الخارج'],
-  ctypes: ['استفسار','طلب','شكوى'],
-  emos: ['طبيعي','مستعجل','إيجابي','غير حاسم','منزعج','كثير الإلحاح'],
-  srcs: ['انستقرام','الخرائط','الذكاء الاصطناعي','بحث قوقل'],
-  topicMap: {
-    'استفسار': ['الأسعار','أوقات العمل','سعر بالساعة','سياسة المرافق','الأعمار','العروض','الاشتراك الشهري','الفعاليات','التعليم','الخدمة','الوجبة'],
-    'شكوى': ['أسلوب الموظفات','قائمة الحظر','السلامة','الختم','شكوى قانونية','سياسة الإلغاء'],
-    'طلب': ['مفقودات','التواصل','حفلة خاصة','مكان الفرع','الإطمئنان']
-  },
-  labels: {},
-  branchPhones: {},
-  adminPhone: ''
-};
-
-let S = JSON.parse(JSON.stringify(S_DEFAULT));
-
-async function loadSettings() {
-  return new Promise((resolve) => {
-    if (!db) { resolve(); return; }
-    const tx = db.transaction(STORE_SETTINGS, 'readonly'), req = tx.objectStore(STORE_SETTINGS).get('main');
-    req.onsuccess = () => {
-      if (req.result && req.result.data) S = { ...JSON.parse(JSON.stringify(S_DEFAULT)), ...req.result.data };
-      else S = JSON.parse(JSON.stringify(S_DEFAULT));
-      resolve();
-    };
-    req.onerror = () => { resolve(); };
-  });
-}
-
-async function saveSettings() {
-  return new Promise((resolve) => {
-    if (!db) { resolve(); return; }
-    const tx = db.transaction(STORE_SETTINGS, 'readwrite');
-    tx.objectStore(STORE_SETTINGS).put({ key: 'main', data: S });
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => resolve();
-  });
-}
-
-// ===== CHILD NAMES =====
-function getChildNames(seq) {
-  return new Promise((resolve) => {
-    if (!db) { resolve([]); return; }
-    const tx = db.transaction(STORE_CHILD_NAMES, 'readonly'), req = tx.objectStore(STORE_CHILD_NAMES).get(seq);
-    req.onsuccess = () => resolve(req.result ? req.result.names : []);
-    req.onerror = () => resolve([]);
-  });
-}
-
-function saveChildNames(seq, names) {
-  return new Promise((resolve) => {
-    if (!db) { resolve(); return; }
-    const cleaned = names.filter(n => n && n.trim() !== '');
-    const tx = db.transaction(STORE_CHILD_NAMES, 'readwrite');
-    if (cleaned.length > 0) tx.objectStore(STORE_CHILD_NAMES).put({ seq, names: cleaned });
-    else tx.objectStore(STORE_CHILD_NAMES).delete(seq);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => resolve();
-  });
-}
-
-function deleteChildNames(seq) {
-  return new Promise((resolve) => {
-    if (!db) { resolve(); return; }
-    const tx = db.transaction(STORE_CHILD_NAMES, 'readwrite'); tx.objectStore(STORE_CHILD_NAMES).delete(seq);
-    tx.oncomplete = () => resolve(); tx.onerror = () => resolve();
-  });
-}
-
-const CHILD_LABELS_DEF = {'طفل':'1','طفلين':'2','ثلاثة':'3','أربعة':'4','خمسة':'5','أكثر':'6+'};
-let defaultDate = null;
-const CHILD_OPTS = ['طفل','طفلين','ثلاثة','أربعة','خمسة','أكثر'];
-const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-
-// ===== STATE =====
-let calls = [], editSeq = null, callDT = null, formStep = 1, isEditMode = false;
-let tagsStepIndex = 0, tagsPanelOpen = false;
-let groupMode = false, textViewActive = false;
-
-const TAGS_STEPS = [
-  { id: 'branch', label: '🏢 الفرع', group: 'branch', itemsKey: 'branches', cssClass: 'tl-wide-blue', color: '#4338ca' },
-  { id: 'ctype', label: '📞 نوع المكالمة', group: 'ctype', items: ['استفسار','طلب','شكوى'], cssClass: 'tl-contrast-dark', color: '#1e293b' },
-  { id: 'topic', label: '📋 الموضوع', group: 'topic', itemsKey: null, cssClass: 'tl-outline-red', color: '#dc2626' },
-  { id: 'child', label: '👶 عدد الأطفال', group: 'child', items: CHILD_OPTS, cssClass: 'tl-pill-blue', color: '#7c3aed' },
-  { id: 'loc', label: '📍 موقع العميل', group: 'loc', itemsKey: 'locs', cssClass: 'tl-teal-text', color: '#0f766e' },
-  { id: 'nat', label: '🌍 الجنسية (اللكنة)', group: 'nat', itemsKey: 'nat', cssClass: 'tl-solid-blue', color: '#1d4ed8' },
-  { id: 'emo', label: '🎭 نبرة العميل', group: 'emo', itemsKey: 'emos', cssClass: 'tl-bold-indigo', color: '#3730a3' },
-  { id: 'src', label: '📡 مصدر التواصل', group: 'src', itemsKey: 'srcs', cssClass: 'tl-wide-outline', color: '#b45309' },
-  { id: 'gender', label: '👤 الجنس', group: 'gender', items: ['ذكر','أنثى'], cssClass: 'tl-solid-teal', color: '#047857' },
-];
-
-const sel = { gender:'', nat:'', branch:'', loc:'', src:'', topics:[], ctype:'', child:'', emo:'' };
-
-// ===== TIME/DATE =====
-function fmtTime(d){ let h=String(d.getHours()).padStart(2,'0'), m=String(d.getMinutes()).padStart(2,'0'); return `${h}:${m}`; }
-function fmtDate(d){ return `${d.getDate()} ${MONTHS[d.getMonth()]}`; }
-function fmtDT(d){ return `${fmtDate(d)}  ${fmtTime(d)}`; }
-function dayKey(d){ return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
-function isSaudiPhone(v){ return /^05\d{8}$/.test(v); }
-function monthLetter(d){ return String.fromCharCode(65 + (d||new Date()).getMonth()); }
-
-function dayCallCount(dt){
-  const k=dayKey(dt);
-  const existingSeqs=calls.filter(c=>dayKey(c.dt)===k).map(c=>c.seq);
-  let maxNum=0;
-  existingSeqs.forEach(seq=>{ const match=seq.match(/\d+$/); if(match){ const num=parseInt(match[0],10); if(!isNaN(num)&&num>maxNum) maxNum=num; } });
-  return maxNum+1;
-}
-
-function buildSeq(dt){
-  const d=dt||(defaultDate?new Date(defaultDate):new Date());
-  const letter=monthLetter(d), day=String(d.getDate()).padStart(2,'0'), num=String(dayCallCount(d)).padStart(2,'0');
-  return letter+day+num;
-}
-
-function nextSeq(dt){ return buildSeq(dt); }
-
-// ===== TOAST =====
-function toast(msg, type='ok'){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className='toast '+type+' show';
-  clearTimeout(t._tid); t._tid=setTimeout(()=>t.classList.remove('show'),2500);
-}
-
-// ===== TABS =====
-function switchTab(id, btn){
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  const tabEl = document.getElementById('tab-'+id);
-  if (tabEl) tabEl.classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (id==='analytics') updateAnalytics();
-  if (id==='maint') renderMBody();
-  if (id==='log'){ renderFilteredLog(); }
-  if (id==='form' && !callDT && defaultDate){ touchDT(); }
-}
-
-// ===== TAGS STEPS (تم إصلاح مشكلة التوقف) =====
-function getStepItems(step) {
-  if (step.items) return step.items;
-  if (step.itemsKey) return S[step.itemsKey] || [];
-  if (step.id === 'topic') {
-    if (sel.ctype) {
-      if (!S.topicMap[sel.ctype] || S.topicMap[sel.ctype].length === 0) {
-        S.topicMap[sel.ctype] = [...(S_DEFAULT.topicMap[sel.ctype] || [])];
-      }
-      return S.topicMap[sel.ctype] || [];
-    }
-    return [];
-  }
-  return [];
-}
-
-let _tagsRenderPending = false;
-function renderTagsStep() {
-  // منع التكرار اللانهائي - استخدام debounce
-  if (_tagsRenderPending) return;
-  _tagsRenderPending = true;
-  
-  requestAnimationFrame(() => {
-    _tagsRenderPending = false;
-    _doRenderTagsStep();
-  });
-}
-
-function _doRenderTagsStep() {
-  const container = document.getElementById('tagsStepContainer');
-  const nav = document.getElementById('tagsStepNav');
-  const stepIndicator = document.getElementById('tagsStepIndicator');
-  const prevBtn = document.getElementById('tagsPrevBtn');
-  const skipBtn = document.getElementById('tagsSkipBtn');
-  if (!container) return;
-
-  if (isEditMode) {
-    container.innerHTML = buildAllTagsHTML();
-    if (nav) nav.style.display = 'flex';
-    if (prevBtn) prevBtn.style.display = 'inline-block';
-    if (skipBtn) { skipBtn.textContent = 'تخطي ←'; skipBtn.style.display = 'inline-block'; }
-    if (stepIndicator) stepIndicator.textContent = 'وضع التعديل - جميع الأوسمة';
-    updateCond();
-    return;
-  }
-
-  if (tagsStepIndex >= TAGS_STEPS.length) {
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--green);font-weight:800;font-size:15px;">✓ تم تحديد جميع الأوسمة</div>';
-    if (nav) nav.style.display = 'flex';
-    if (prevBtn) prevBtn.style.display = 'inline-block';
-    if (skipBtn) skipBtn.style.display = 'none';
-    if (stepIndicator) stepIndicator.textContent = 'اكتمل';
-    updateCond();
-    return;
-  }
-
-  const step = TAGS_STEPS[tagsStepIndex];
-  let items = getStepItems(step);
-  const currentVal = sel[step.group];
-  const isMulti = step.group === 'topic';
-
-  let html = `<div class="tag-step-container">`;
-  html += `<div class="tag-step-label" style="color:${step.color};border-right:3px solid ${step.color};padding-right:12px;">${step.label}</div>`;
-  html += `<div class="tag-step-buttons">`;
-
-  if (items.length === 0 && step.id === 'topic') {
-    html += '<span style="font-size:12px;color:var(--tl2);padding:10px 14px;">اختر نوع المكالمة أولاً</span>';
-  } else {
-    items.forEach(item => {
-      let isSel = false;
-      if (isMulti) isSel = currentVal.includes(item);
-      else isSel = currentVal === item;
-      const lbl = S.labels[item] || (step.id === 'child' ? (CHILD_LABELS_DEF[item] || item) : item);
-      html += `<button class="ob ${step.cssClass}${isSel?' sel':''}" data-group="${step.group}" data-val="${item}" onclick="selectOptStep(this,'${step.group}','${step.id}')">${lbl}</button>`;
-    });
-  }
-  html += `</div></div>`;
-  container.innerHTML = html;
-
-  if (nav) nav.style.display = 'flex';
-  if (prevBtn) prevBtn.style.display = tagsStepIndex > 0 ? 'inline-block' : 'none';
-  if (skipBtn) {
-    skipBtn.style.display = 'inline-block';
-    skipBtn.textContent = tagsStepIndex >= TAGS_STEPS.length - 1 ? 'إنهاء ←' : 'تخطي ←';
-  }
-  if (stepIndicator) stepIndicator.textContent = `الخطوة ${tagsStepIndex+1} من ${TAGS_STEPS.length}`;
-
-  updateCond();
-}
-
-function selectOptStep(btn, grp, stepId) {
-  if (grp === 'topic') {
-    const v = btn.dataset.val; const idx = sel.topics.indexOf(v);
-    if (idx >= 0) { sel.topics.splice(idx, 1); btn.classList.remove('sel'); }
-    else { sel.topics.push(v); btn.classList.add('sel'); }
-    touchDT();
-    return;
-  }
-
-  const alreadySelected = btn.classList.contains('sel');
-  // إزالة التحديد من جميع الأزرار في نفس المجموعة
-  const allBtns = document.querySelectorAll(`[data-group="${grp}"]`);
-  allBtns.forEach(b => b.classList.remove('sel'));
-
-  if (alreadySelected) {
-    sel[grp] = '';
-  } else {
-    btn.classList.add('sel');
-    sel[grp] = btn.dataset.val;
-  }
-
-  if (grp === 'ctype') {
-    sel.topics = [];
-    updateCond();
-    if (!S.topicMap[sel.ctype] || S.topicMap[sel.ctype].length === 0) {
-      S.topicMap[sel.ctype] = [...(S_DEFAULT.topicMap[sel.ctype] || [])];
-    }
-    // عند اختيار النوع، انتقل تلقائياً للخطوة التالية
-    if (!alreadySelected) {
-      setTimeout(() => { tagsStepNext(); }, 300);
-      return;
-    }
-  }
-
-  touchDT();
-  updateTagsBtnIndicator();
-
-  // الانتقال التلقائي للخطوة التالية بعد اختيار أي عنصر (باستثناء الموضوع)
-  if (!alreadySelected && sel[grp] !== '' && grp !== 'topic' && grp !== 'ctype') {
-    setTimeout(() => { tagsStepNext(); }, 400);
-  }
-}
-
-function tagsStepNext() {
-  if (isEditMode) return;
-  if (tagsStepIndex < TAGS_STEPS.length) {
-    tagsStepIndex++;
-    renderTagsStep();
-  }
-}
-
-function tagsStepPrev() {
-  if (isEditMode) return;
-  if (tagsStepIndex > 0) {
-    tagsStepIndex--;
-    renderTagsStep();
-  }
-}
-
-function resetTagsSteps() {
-  tagsStepIndex = 0;
-  isEditMode = false;
-  renderTagsStep();
-}
-
-function buildAllTagsHTML() {
-  let html = '<div class="trow">';
-  html += `<div class="tline-label" style="color:#4338ca; border-right: 3px solid #4338ca;">🏢 الفرع</div><div class="tline tl-wide-blue">`;
-  S.branches.forEach(item => { const isSel = sel.branch === item; html += `<button class="ob${isSel?' sel':''}" data-group="branch" data-val="${item}" onclick="selectOptAll(this,'branch')">${S.labels[item]||item}</button>`; });
-  html += '</div>';
-  html += `<div class="tline-label" style="color:#1e293b; border-right: 3px solid #1e293b;">📞 نوع المكالمة</div><div class="tline tl-contrast-dark">`;
-  ['استفسار','طلب','شكوى'].forEach(item => { html += `<button class="ob${sel.ctype===item?' sel':''}" data-group="ctype" data-val="${item}" onclick="selectOptAll(this,'ctype')">${item}</button>`; });
-  html += '</div>';
-  html += `<div class="tline-label" style="color:#dc2626; border-right: 3px solid #dc2626;">📋 الموضوع</div><div class="tline tl-outline-red">`;
-  const topics = sel.ctype && S.topicMap[sel.ctype] ? S.topicMap[sel.ctype] : [];
-  if (topics.length) topics.forEach(item => { const isSel = sel.topics.includes(item); html += `<button class="ob${isSel?' sel':''}" data-group="topic" data-val="${item}" onclick="selectOptAll(this,'topic')">${item}</button>`; });
-  else html += '<span style="font-size:12px;color:var(--tl2);padding:10px 14px;">اختر نوع المكالمة أولاً</span>';
-  html += '</div>';
-  html += `<div class="tline-label" style="color:#7c3aed; border-right: 3px solid #7c3aed;">👶 عدد الأطفال</div><div class="tline tl-pill-blue">`;
-  CHILD_OPTS.forEach(item => { html += `<button class="ob${sel.child===item?' sel':''}" data-group="child" data-val="${item}" onclick="selectOptAll(this,'child')">${S.labels[item]||CHILD_LABELS_DEF[item]||item}</button>`; });
-  html += '</div>';
-  html += `<div class="tline-label" style="color:#0f766e; border-right: 3px solid #0f766e;">📍 موقع العميل</div><div class="tline tl-teal-text">`;
-  S.locs.forEach(item => { html += `<button class="ob${sel.loc===item?' sel':''}" data-group="loc" data-val="${item}" onclick="selectOptAll(this,'loc')">${S.labels[item]||item}</button>`; });
-  html += '</div>';
-  html += `<div class="tline-label" style="color:#1d4ed8; border-right: 3px solid #1d4ed8;">🌍 الجنسية (اللكنة)</div><div class="tline tl-solid-blue">`;
-  S.nat.forEach(item => { html += `<button class="ob${sel.nat===item?' sel':''}" data-group="nat" data-val="${item}" onclick="selectOptAll(this,'nat')">${S.labels[item]||item}</button>`; });
-  html += '</div>';
-  html += `<div class="tline-label" style="color:#3730a3; border-right: 3px solid #3730a3;">🎭 نبرة العميل</div><div class="tline tl-bold-indigo">`;
-  S.emos.forEach(item => { html += `<button class="ob${sel.emo===item?' sel':''}" data-group="emo" data-val="${item}" onclick="selectOptAll(this,'emo')">${S.labels[item]||item}</button>`; });
-  html += '</div>';
-  html += `<div class="tline-label" style="color:#b45309; border-right: 3px solid #b45309;">📡 مصدر التواصل</div><div class="tline tl-wide-outline">`;
-  S.srcs.forEach(item => { html += `<button class="ob${sel.src===item?' sel':''}" data-group="src" data-val="${item}" onclick="selectOptAll(this,'src')">${S.labels[item]||item}</button>`; });
-  html += '</div>';
-  html += `<div class="tline-label" style="color:#047857; border-right: 3px solid #047857;">👤 الجنس</div><div class="tline tl-solid-teal">`;
-  ['ذكر','أنثى'].forEach(item => { html += `<button class="ob${sel.gender===item?' sel':''}" data-group="gender" data-val="${item}" onclick="selectOptAll(this,'gender')">${item}</button>`; });
-  html += '</div></div>';
-  return html;
-}
-
-function selectOptAll(btn, grp) {
-  if (grp === 'topic') {
-    const v = btn.dataset.val; const idx = sel.topics.indexOf(v);
-    if (idx >= 0) { sel.topics.splice(idx, 1); btn.classList.remove('sel'); }
-    else { sel.topics.push(v); btn.classList.add('sel'); }
-    touchDT();
-    return;
-  }
-  const alreadySelected = btn.classList.contains('sel');
-  const allBtns = document.querySelectorAll(`[data-group="${grp}"]`);
-  allBtns.forEach(b => b.classList.remove('sel'));
-  if (alreadySelected) sel[grp] = '';
-  else { btn.classList.add('sel'); sel[grp] = btn.dataset.val; }
-  if (grp === 'ctype') {
-    sel.topics = [];
-    updateCond();
-    if (!S.topicMap[sel.ctype] || S.topicMap[sel.ctype].length === 0) S.topicMap[sel.ctype] = [...(S_DEFAULT.topicMap[sel.ctype] || [])];
-    renderTagsStep();
-  }
-  touchDT();
-  updateTagsBtnIndicator();
-}
-
-// ===== PHONE INPUT =====
-function onPhoneInput(v){
-  touchDT();
-  if(isSaudiPhone(v) && !editSeq){
-    const prev=calls.filter(c=>c.phone===v);
-    if(prev.length){
-      const lat=prev[0];
-      if(!sel.nat){ sel.nat=lat.nat; } if(!sel.gender){ sel.gender=lat.gender; }
-      if (tagsPanelOpen && isEditMode) renderTagsStep();
-      document.getElementById('custNotice').style.display='flex';
-      const isFemale = lat.gender === 'أنثى';
-      const verbMap = { 'استفسار': isFemale ? 'تستفسر' : 'يستفسر', 'شكوى': isFemale ? 'تشتكي' : 'يشتكي', 'طلب': isFemale ? 'تطلب' : 'يطلب' };
-      const verb = verbMap[lat.ctype] || (lat.ctype || '');
-      document.getElementById('custNotice').innerHTML = `<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div><span style="flex:1; line-height: 1.5; font-size: 13px;">${prev.length} مكالمات سابقة ، آخر مكالمة في ${fmtDT(lat.dt)} <span style="color:var(--accent); font-weight:700;">${verb} ${lat.topic||''}</span></span><button type="button" onclick="viewCustomerHistory('${v}')" style="background:var(--white); border:1.5px solid var(--accent); border-radius:8px; padding:4px 10px; font-family:'Cairo', sans-serif; font-size:11px; font-weight:700; color:var(--accent); cursor:pointer; white-space:nowrap;">سجل العميل</button>`;
-      return;
-    }
-  }
-  document.getElementById('custNotice').style.display='none';
-}
-
-function viewCustomerHistory(phone) {
-  const logTabBtn = document.querySelector('[data-tab="log"]'); if (logTabBtn) switchTab('log', logTabBtn);
-  if (!groupMode) toggleGroupMode();
-  const searchInput = document.getElementById('logSearch'); if (searchInput) { searchInput.value = phone; renderFilteredLog(); }
-  window.scrollTo({top: 0, behavior: 'smooth'});
-}
-
-function touchDT(){
-  if(!callDT && !editSeq){
-    if(defaultDate){
-      const now=new Date();
-      callDT=new Date(defaultDate);
-      callDT.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
-    } else {
-      callDT=new Date();
-    }
-    updateDTBtns();
-    updateSeqLabel();
-  }
-}
-
-let dateSettingsOpen=false;
-function toggleDateSettings(){
-  dateSettingsOpen=!dateSettingsOpen;
-  const panel=document.getElementById('dateSettingsPanel');
-  const gear=document.getElementById('dateSettingsBtn');
-  panel.style.display=dateSettingsOpen?'block':'none';
-  const active=dateSettingsOpen||defaultDate;
-  if(gear){
-    gear.style.borderColor=active?'var(--teal)':'var(--border)';
-    gear.style.color=active?'var(--teal)':'var(--t2)';
-    gear.style.background=active?'var(--tl)':'var(--white)';
-  }
-  updateFixedDateDisplay();
-}
-
-function updateFixedDateDisplay(){ const lbl=document.getElementById('fixedDateDisplay'); if(lbl) lbl.textContent=defaultDate?fmtDate(defaultDate):'—'; }
-
-function onDefaultDatePick(v){
-  if(!v) return;
-  const [y,m,d]=v.split('-').map(Number);
-  const nd=new Date(); nd.setFullYear(y,m-1,d);
-  defaultDate=nd; callDT=null;
-  touchDT();
-  updateDefaultDateUI();
-  updateFixedDateDisplay();
-  const gear=document.getElementById('dateSettingsBtn');
-  if(gear) gear.style.color='var(--amber)';
-}
-
-function resetDefaultDate(){
-  defaultDate=null; callDT=null;
-  updateDefaultDateUI();
-  updateFixedDateDisplay();
-  updateSeqLabel();
-  const gear=document.getElementById('dateSettingsBtn');
-  if(gear){ gear.style.borderColor='var(--border)'; gear.style.color='var(--t2)'; gear.style.background='var(--white)'; }
-}
-
-function updateDefaultDateUI(){
-  const db=document.getElementById('dateBtnText');
-  if(defaultDate){ if(db) db.textContent=callDT?fmtDate(callDT):fmtDate(defaultDate); }
-  else { if(db && !callDT) db.textContent='التاريخ'; }
-  updateSeqLabel();
-}
-
-function updateSeqLabel(){
-  const lbl=document.getElementById('seqLabel');
-  if(lbl) lbl.textContent='تسلسل '+(editSeq!==null?editSeq:buildSeq(callDT||new Date()));
-}
-
-function updateDTBtns(){
-  if(!callDT) return;
-  const dbtn=document.getElementById('dateBtnText');
-  const tb=document.getElementById('timeBtnText');
-  if(dbtn) dbtn.textContent=fmtDate(callDT);
-  if(tb) tb.textContent=fmtTime(callDT);
-  const dp=document.getElementById('datePicker');
-  const tp=document.getElementById('timePicker');
-  if(dp) dp.value=callDT.toLocaleDateString('en-CA');
-  if(tp){ const hh=String(callDT.getHours()).padStart(2,'0'),mm=String(callDT.getMinutes()).padStart(2,'0'); tp.value=hh+':'+mm; }
-}
-
-function onDatePick(v){
-  if(!v) return;
-  if(!callDT) callDT=new Date();
-  const [y,m,d]=v.split('-').map(Number);
-  callDT.setFullYear(y,m-1,d);
-  updateDTBtns();
-  updateSeqLabel();
-}
-
-function onTimePick(v){
-  if(!v) return;
-  if(!callDT) callDT=new Date();
-  const [h,m]=v.split(':').map(Number);
-  callDT.setHours(h,m,0,0);
-  updateDTBtns();
-}
-
-// ===== FORM STEPS =====
-function goNextStep() {
-  const phone = document.getElementById('phone').value.trim();
-  if (formStep === 1) {
-    if (editSeq === null && !isSaudiPhone(phone)) return toast('أدخل رقم جوال سعودي صحيح (05XXXXXXXX)', 'err');
-    if (editSeq !== null && phone === '') return toast('الرجاء إدخال رقم الجوال', 'err');
-    formStep = 2;
-    document.getElementById('step-details-section').style.display = 'block';
-    document.getElementById('details').focus();
-    document.getElementById('nextStepBtn').innerHTML = 'التالي <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
-    return;
-  }
-  if (formStep === 2) {
-    formStep = 3;
-    const tagsPanel = document.getElementById('tagsPanel');
-    tagsPanel.style.display = 'block';
-    tagsPanelOpen = true;
-    updateTagsBtnIndicator();
-    if (!isEditMode) resetTagsSteps(); else renderTagsStep();
-    const btn = document.getElementById('nextStepBtn');
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ';
-    btn.onclick = submitCall;
-    tagsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
-  }
-}
-
-function resetFormSteps() {
-  formStep = 1;
-  document.getElementById('step-details-section').style.display = 'none';
-  const btn = document.getElementById('nextStepBtn');
-  if (btn) {
-    btn.innerHTML = 'التالي <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
-    btn.onclick = goNextStep;
-  }
-  document.getElementById('nextBtnWrap').style.display = 'flex';
-}
-
-// ===== SUBMIT & DELETE =====
-async function submitCall(){
-  if (!navigator.onLine) return toast('لا يوجد اتصال بالإنترنت. الرجاء المحاولة لاحقاً.', 'err');
-
-  const phone=document.getElementById('phone').value.trim();
-  if (editSeq === null && !isSaudiPhone(phone)) return toast('أدخل رقم جوال سعودي صحيح (05XXXXXXXX)','err');
-  if (editSeq !== null && phone === '') return toast('الرجاء إدخال رقم الجوال','err');
-  if(!sel.ctype) return toast('الرجاء اختيار نوع المكالمة','err');
-  if(sel.topics.length === 0) return toast('الرجاء اختيار موضوع المكالمة','err');
-  if(!callDT) callDT=new Date();
-
-  const rec={
-    seq: editSeq!==null ? editSeq : nextSeq(callDT||new Date()),
-    dt: callDT, phone, gender:sel.gender, nat:sel.nat, branch:sel.branch, loc:sel.loc,
-    src:sel.src, topic:sel.topics.join('، '), ctype:sel.ctype,
-    compNo:sel.ctype==='شكوى'?(document.getElementById('compNo').value.trim()||''):'',
-    reqNo: sel.ctype==='طلب' ?(document.getElementById('reqNo').value.trim()||''):'',
-    child: sel.child, emo:sel.emo, notes: document.getElementById('details').value.trim()||''
-  };
-
-  try {
-    // حفظ محلياً أولاً
-    await saveCallDB(rec);
-
-    // محاولة حفظ في Firebase
-    try {
-      await FB.save(rec);
-    } catch (fbErr) {
-      console.warn('تعذر الحفظ في Firebase (سيتم المحاولة لاحقاً):', fbErr.message);
-    }
-
-    if(editSeq!==null){
-      const idx=calls.findIndex(c=>c.seq===editSeq); if(idx!==-1) calls[idx]=rec;
-      const savedSeq=editSeq; editSeq=null; isEditMode=false;
-      document.getElementById('submitBtn').innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
-      renderFilteredLog(); updateBadge(); clearForm();
-      toast('تم تحديث المكالمة','ok');
-      const logBtn=document.querySelector('[data-tab="log"]'); switchTab('log',logBtn);
-      setTimeout(()=>{
-        const card=document.getElementById('dtl-'+savedSeq);
-        if(card){ if(!card.classList.contains('open')) togCard(savedSeq); card.closest('.cc')?.scrollIntoView({behavior:'smooth',block:'center'}); }
-      }, 300);
-      showPostSaveModal(rec);
-    } else {
-      calls.unshift(rec); renderFilteredLog(); updateBadge(); clearForm();
-      if(tagsPanelOpen){ toggleTagsPanel(); }
-      toast('تم حفظ المكالمة','ok');
-      showPostSaveModal(rec);
-    }
-  } catch(err) {
-    toast('حدث خطأ أثناء حفظ المكالمة: ' + err.message, 'err');
-    console.error(err);
-  }
-}
-
-async function deleteCall(seq) {
-  if(!confirm('هل أنت متأكد من حذف هذه المكالمة تماماً؟')) return;
-  try {
-    await deleteCallDB(seq);
-    await deleteChildNames(seq);
-    try { await FB.remove(seq); } catch(fbErr) { console.warn('تعذر الحذف من Firebase:', fbErr.message); }
-    calls = calls.filter(c => c.seq !== seq);
-    renderFilteredLog(); updateBadge();
-    if(document.getElementById('tab-analytics').classList.contains('active')){ updateAnalytics(); }
-    toast('تم الحذف بنجاح', 'ok');
-  } catch(err) { console.error(err); toast('حدث خطأ أثناء الحذف', 'err'); }
-}
-
-function clearForm(){
-  ['phone','compNo','reqNo','details'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('custNotice').style.display='none';
-  document.getElementById('condComp').style.display='none';
-  document.getElementById('condReq').style.display='none';
-  Object.keys(sel).forEach(k=>{ sel[k]=k==='topics'?[]:'' });
-  callDT=null; editSeq=null; isEditMode=false;
-  if(defaultDate){ touchDT(); } else {
-    updateSeqLabel(); updateDTBtns();
-    document.getElementById('dateBtnText').textContent='التاريخ';
-    document.getElementById('timeBtnText').textContent='الوقت';
-  }
-  document.querySelectorAll('[data-group="gender"],[data-group="ctype"],[data-group="child"]').forEach(b=>b.classList.remove('sel'));
-  updateTagsBtnIndicator(); resetFormSteps(); resetTagsSteps();
-  if (tagsPanelOpen) { toggleTagsPanel(); }
-}
-
-function editCall(seq){
-  const c=calls.find(x=>x.seq===seq); if(!c) return;
-  editSeq=seq; isEditMode=true;
-  document.getElementById('phone').value=c.phone; document.getElementById('details').value=c.notes;
-  document.getElementById('compNo').value=c.compNo||''; document.getElementById('reqNo').value=c.reqNo||'';
-  callDT = new Date(c.dt); updateSeqLabel(); updateDTBtns();
-  sel.gender=c.gender; sel.nat=c.nat; sel.branch=c.branch; sel.loc=c.loc; sel.src=c.src||'';
-  sel.topics=c.topic?c.topic.split('، ').filter(Boolean):[]; sel.ctype=c.ctype; sel.child=c.child||''; sel.emo=c.emo||'';
-  tagsStepIndex = TAGS_STEPS.length; renderTagsStep();
-  document.getElementById('submitBtn').innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-  document.getElementById('custNotice').style.display='none'; formStep=3;
-  document.getElementById('step-details-section').style.display='block';
-  document.getElementById('nextBtnWrap').style.display='none';
-  if (!tagsPanelOpen) { toggleTagsPanel(); }
-  const formBtn=document.querySelector('[data-tab="form"]'); switchTab('form',formBtn);
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-// ===== POST SAVE MODAL =====
-let psCallRecord = null;
-function showPostSaveModalBySeq(seq) { const c = calls.find(x => x.seq === seq); if (c) showPostSaveModal(c); }
-async function showPostSaveModal(rec) {
-  psCallRecord = rec;
-  document.getElementById('ps-type').textContent = rec.ctype;
-  document.getElementById('ps-summary').textContent = genSummary(rec);
-  const savedNames = await getChildNames(rec.seq);
-  const container = document.getElementById('ps-children-container');
-  if (savedNames.length > 0) container.innerHTML = savedNames.map((name, i) => `<input type="text" class="fi child-name-input" placeholder="اسم الطفل ${i+1}" value="${name}" />`).join('');
-  else container.innerHTML = '<input type="text" class="fi child-name-input" placeholder="اسم الطفل 1" />';
-  document.getElementById('post-save-modal').style.display = 'flex';
-}
-function addPSChildInput() {
-  const container = document.getElementById('ps-children-container');
-  const inputs = container.querySelectorAll('input');
-  if (inputs.length >= 10) { toast('الحد الأقصى 10 أطفال', 'err'); return; }
-  const input = document.createElement('input'); input.type = 'text'; input.className = 'fi child-name-input';
-  input.placeholder = 'اسم الطفل ' + (inputs.length + 1); container.appendChild(input);
-}
-function getPSChildNamesList() { const inputs = document.querySelectorAll('.child-name-input'); return Array.from(inputs).map(inp => inp.value.trim()).filter(n => n !== ''); }
-async function savePSChildNamesIfAny() { if (!psCallRecord) return; const names = getPSChildNamesList(); if (names.length > 0) { await saveChildNames(psCallRecord.seq, names); renderFilteredLog(); } }
-async function psNotifyAdmin() { await savePSChildNamesIfAny(); if (psCallRecord) notifyAdmin(psCallRecord.seq); }
-async function psNotifyBranch() { await savePSChildNamesIfAny(); if (psCallRecord) notifyBranch(psCallRecord.seq); }
-async function psSendFollowUp() { await savePSChildNamesIfAny(); if (psCallRecord) sendFollowUp(psCallRecord.seq); }
-async function psRedirect1() {
-  await savePSChildNamesIfAny(); if (!psCallRecord) return;
-  const c = psCallRecord;
-  const msg = `تطمن | ${c.ctype === 'شكوى' ? 'شكوى' : c.ctype === 'طلب' ? 'طلب' : 'استفسار'} | ${c.branch||'—'} | ${c.topic||'—'} | ${c.gender==='أنثى'?'أم':'أب'} ${c.child||'—'} ${c.notes ? '| '+c.notes : ''}`;
-  waLink(c.phone, msg);
-}
-async function psRedirect2() {
-  await savePSChildNamesIfAny(); if (!psCallRecord) return;
-  const c = psCallRecord;
-  const msg = `تطمن + جوال | ${c.ctype} | ${c.branch||'—'} | ${c.topic||'—'} | ${c.gender} | ${c.phone} ${c.notes ? '| '+c.notes : ''}`;
-  waLink(c.phone, msg);
-}
-
-// ===== LOG =====
-function cardSummary(c){
-  const f=c.gender==='أنثى';
-  const verb={'شكوى':f?'تشتكي':'يشتكي','استفسار':f?'تستفسر عن':'يستفسر عن','طلب':f?'تطلب':'يطلب'}[c.ctype]||c.ctype;
-  const topics=c.topic?c.topic.split('، ').filter(Boolean):[];
-  let topicPart='';
-  if(topics.length===1) topicPart=topics[0];
-  else if(topics.length>1) topicPart=topics.slice(0,-1).join(' و')+' و'+topics[topics.length-1];
-  let s=verb; if(topicPart) s+=' '+topicPart; if(c.branch) s+=` في فرع ${c.branch}`; return s;
-}
-
-function callCard(c, nested){
-  const sa=nested?'':' standalone';
-  const fields=[
-    {l:'تاريخ المكالمة',v:`(${fmtDate(c.dt)})`},{l:'جوال العميل',v:c.phone},
-    {l:'الجنس',v:c.gender},{l:'اللكنة',v:c.nat},{l:'الفرع',v:c.branch},
-    {l:'الموقع',v:c.loc},{l:'عدد الأطفال',v:c.child||'—'},
-    {l:'نبرة العميل',v:c.emo||'—'},{l:'المصدر',v:c.src||'—'},
-    {l:'الموضوع',v:c.topic||'—'},
-    ...(c.compNo?[{l:'رقم الشكوى',v:c.compNo}]:[]),
-    ...(c.reqNo?[{l:'رقم الطلب',v:c.reqNo}]:[])
-  ];
-  const seqCls=c.ctype==='شكوى'?'ct-complaint':c.ctype==='طلب'?'ct-request':'ct-inquiry';
-  const waSVG=`<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>`;
-  return `<div class="cc${sa}"><div class="cc-top" onclick="togCard('${c.seq}')"><span class="cc-seq ${seqCls}">${c.seq}</span><span class="cc-time">${fmtTime(c.dt)}</span><span class="cc-summary">${cardSummary(c)}</span><span class="cc-tog" id="tog-${c.seq}" style="font-size:18px;font-weight:300;">＋</span></div><div class="cc-act-row" id="act-${c.seq}"><button onclick="event.stopPropagation();showPostSaveModalBySeq('${c.seq}')" class="btn-wa">${waSVG} واتساب</button><button id="summBtn-${c.seq}" onclick="event.stopPropagation();toggleSummDetail('${c.seq}')" style="color:var(--text);border:1px solid var(--border);">ملخص</button><button onclick="event.stopPropagation();editCall('${c.seq}')" style="color:var(--t2);border:1px solid var(--border);">تعديل</button><button onclick="event.stopPropagation();deleteCall('${c.seq}')" style="color:var(--red);border:1px solid var(--rl);margin-right:auto;">حذف</button><button id="copy-${c.seq}" onclick="event.stopPropagation();copySumm('${c.seq}')" style="display:none;color:var(--purple);border:1px solid var(--pl);">نسخ</button></div><div class="cc-dtl" id="dtl-${c.seq}"><div class="summ-box" id="summ-${c.seq}"></div><div id="grid-${c.seq}" style="display:none;"><div class="dgrid">${fields.map(f=>`<div class="di"><div class="dl">${f.l}</div><div class="dv">${f.v}</div></div>`).join('')}</div>${c.notes?`<div class="dnotes">${c.notes}</div>`:''}</div></div></div>`;
-}
-
-function renderLog(subset){
-  const wrap=document.getElementById('logWrap');
-  const _calls=subset||calls;
-  document.getElementById('logCount').textContent=_calls.length;
-  if(!_calls.length){
-    wrap.innerHTML=`<div style="text-align:center;padding:40px;"><div style="width:50px;height:50px;background:#e2e8f0;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div><p style="color:var(--t2);font-weight:600;">لا توجد مكالمات مسجّلة بعد</p></div>`;
-    return;
-  }
-  const sortVal=document.getElementById('logSort')?document.getElementById('logSort').value:'newest';
-  const sorted=[..._calls].sort((a,b)=>{
-    if(sortVal==='oldest') return a.dt-b.dt;
-    if(sortVal==='branch') return (a.branch||'').localeCompare(b.branch||'')||b.dt-a.dt;
-    if(sortVal==='ctype') return (a.ctype||'').localeCompare(b.ctype||'')||b.dt-a.dt;
-    if(sortVal==='src') return (a.src||'').localeCompare(b.src||'')||b.dt-a.dt;
-    return b.dt-a.dt;
-  });
-  let html='';
-  if(groupMode){
-    const phMap={}, phOrd=[];
-    sorted.forEach(c=>{ if(!phMap[c.phone]){phMap[c.phone]=[];phOrd.push(c.phone);} phMap[c.phone].push(c); });
-    phOrd.forEach(ph=>{
-      const pcs=phMap[ph];
-      const latestDay=fmtDate(new Date(Math.max(...pcs.map(x=>x.dt))));
-      if(pcs.length===1){ html+=callCard(pcs[0],false); }
-      else {
-        html+=`<div class="cust-block"><div class="cust-hdr"><span class="cust-ph">${ph}</span> · ${pcs.length} مكالمات · آخرها ${latestDay}</div>`;
-        pcs.forEach(c=>{ html+=callCard(c,true); });
-        html+='</div>';
-      }
-    });
-  } else {
-    let currentDay = '';
-    sorted.forEach(c=>{
-      let dayStr = fmtDate(c.dt);
-      if (currentDay !== dayStr) {
-        currentDay = dayStr;
-        html += `<div style="font-family:'Tajawal', sans-serif; font-size:16px; font-weight:800; color:var(--accent); margin: 24px 0 12px 0; border-bottom: 2px solid var(--border); padding-bottom: 8px;">(${dayStr})</div>`;
-      }
-      html+=callCard(c,false);
-    });
-  }
-  wrap.innerHTML=html;
-}
-
-function renderFilteredLog(){
-  const q=(document.getElementById('logSearch')||{}).value||'';
-  const term=q.trim().toLowerCase();
-  let result=calls;
-  if(term){
-    result=result.filter(c=>{
-      const fields=[c.phone,c.seq,c.ctype,c.gender,c.nat,c.branch,c.loc,c.src,c.topic,c.emo,c.child,c.notes,c.compNo,c.reqNo].map(v=>(v||'').toLowerCase());
-      return fields.some(f=>f.includes(term));
-    });
-  }
-  renderLog(result);
-  if (textViewActive) { buildTextView(); }
-}
-
-function togCard(seq){
-  const d=document.getElementById('dtl-'+seq);
-  const a=document.getElementById('act-'+seq);
-  const t=document.getElementById('tog-'+seq);
-  if(!d) return;
-  const open=d.classList.toggle('open');
-  if(a) a.style.display=open?'flex':'none';
-  t.textContent=open?'－':'＋';
-  if(open){ showSummaryMode(seq); }
-}
-
-function showSummaryMode(seq){
-  const box=document.getElementById('summ-'+seq);
-  const grid=document.getElementById('grid-'+seq);
-  const btn=document.getElementById('summBtn-'+seq);
-  const c=calls.find(x=>x.seq===seq);
-  if(!c||!box) return;
-  box.textContent=genSummary(c);
-  box.classList.add('open');
-  if(grid) grid.style.display='none';
-  if(btn) btn.textContent='تفاصيل';
-}
-
-function toggleSummDetail(seq){
-  const box=document.getElementById('summ-'+seq);
-  const grid=document.getElementById('grid-'+seq);
-  const copy=document.getElementById('copy-'+seq);
-  const btn=document.getElementById('summBtn-'+seq);
-  const inSummary=box&&box.classList.contains('open');
-  if(inSummary){
-    if(box){ box.classList.remove('open'); box.textContent=''; }
-    if(grid) grid.style.display='';
-    if(copy) copy.style.display='none';
-    if(btn) btn.textContent='ملخص';
-  } else {
-    const c=calls.find(x=>x.seq===seq); if(!c) return;
-    if(box){ box.textContent=genSummary(c); box.classList.add('open'); }
-    if(grid) grid.style.display='none';
-    if(copy) copy.style.display='inline-block';
-    if(btn) btn.textContent='تفاصيل';
-  }
-}
-
-function toggleGroupMode(){
-  groupMode=!groupMode;
-  const icon=document.getElementById('groupModeIcon');
-  icon.textContent=groupMode?'✓':'';
-  renderFilteredLog();
-}
-
-function toggleTextView(){
-  textViewActive=!textViewActive;
-  const icon=document.getElementById('textViewIcon');
-  icon.textContent=textViewActive?'✓':'';
-  const panel=document.getElementById('textViewPanel');
-  panel.style.display=textViewActive?'block':'none';
-  if(textViewActive) buildTextView();
-}
-
-function buildTextView(){
-  const body=document.getElementById('textViewBody');
-  if(!body) return;
-  const sorted=[...calls].sort((a,b)=>b.dt-a.dt);
-  let text='';
-  sorted.forEach((c,i)=>{
-    text+=`${i+1}. ${genSummary(c)}\n`;
-    text+=`   ${'-'.repeat(40)}\n`;
-  });
-  body.textContent=text||'لا توجد بيانات';
-}
-
-function copyAllText(){
-  const body=document.getElementById('textViewBody');
-  if(!body||!body.textContent) return;
-  navigator.clipboard.writeText(body.textContent).then(()=>toast('تم نسخ التقرير','ok'));
-}
-
-function updateBadge(){ const b=document.getElementById('logBadge'); b.style.display='inline-block'; b.textContent=calls.length; }
-
-// ===== SUMMARY =====
-function genSummary(c){
-  const f=c.gender==='أنثى'; const g=(m,fm)=>f?fm:m;
-  const parts=[];
-  const childLabel={'طفل':'طفل واحد','طفلين':'طفلين','ثلاثة':'ثلاثة أطفال','أربعة':'أربعة أطفال','خمسة':'خمسة أطفال','أكثر':'أكثر من خمسة أطفال'};
-  let childPart='';
-  if(c.child&&childLabel[c.child]){ childPart=`${g('أب','أم')} لـ${childLabel[c.child]}`; }
-  else { childPart=g('أب','أم'); }
-  parts.push(childPart);
-  if(c.nat){ const natF=c.nat.endsWith('ي')?c.nat+'ة':c.nat; parts.push(`يظهر ${g('أنه','أنها')} ${g(c.nat, natF)}`); }
-  const verb={'شكوى':g('يشتكي','تشتكي'),'استفسار':g('يستفسر عن','تستفسر عن'),'طلب':g('يطلب','تطلب')}[c.ctype]||c.ctype;
-  let callPart=`${g('اتصل','اتصلت')} ${verb}`;
-  if(c.topic) callPart+=` ${c.topic}`;
-  if(c.branch) callPart+=` في ${c.branch}`;
-  parts.push(callPart);
-  if(c.compNo) parts.push(`رقم الشكوى: ${c.compNo}`);
-  if(c.reqNo) parts.push(`رقم الطلب: ${c.reqNo}`);
-  if(c.notes) parts.push(`في المكالمة: ${c.notes}`);
-  parts.push(`رقم ${g('العميل','العميلة')} ${c.phone}`);
-  return parts.join('، ');
-}
-
-function copySumm(seq){
-  const box=document.getElementById('summ-'+seq);
-  if(!box||!box.textContent) return;
-  navigator.clipboard.writeText(box.textContent).then(()=>toast('تم نسخ النص','ok'));
-}
-
-function waLink(phone, msg){
-  let p=phone.replace(/\D/g,'');
-  if(p.startsWith('0')) p='966'+p.slice(1);
-  window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`,'_blank');
-}
-
-function sendFollowUp(seq){
-  const c=calls.find(x=>x.seq===seq); if(!c) return;
-  waLink(c.phone, genSummary(c));
-}
-
-function notifyBranch(seq){
-  const c=calls.find(x=>x.seq===seq); if(!c) return;
-  const phone=S.branchPhones[c.branch]||'';
-  if(!phone){ toast('لم يتم إضافة رقم هذا الفرع في الصيانة','err'); return; }
-  waLink(phone, genSummary(c));
-}
-
-function notifyAdmin(seq){
-  const c=calls.find(x=>x.seq===seq); if(!c) return;
-  if(!S.adminPhone){ toast('لم يتم إضافة رقم الإدارة في الصيانة','err'); return; }
-  waLink(S.adminPhone, genSummary(c));
-}
-
-// ===== TAGS PANEL TOGGLE =====
-function toggleTagsPanel(){
-  tagsPanelOpen = !tagsPanelOpen;
-  const panel = document.getElementById('tagsPanel');
-  const btn = document.getElementById('tagsToggleBtn');
-  panel.style.display = tagsPanelOpen ? 'block' : 'none';
-  btn.style.borderColor = tagsPanelOpen ? 'var(--accent)' : 'var(--border)';
-  btn.style.color = tagsPanelOpen ? 'var(--accent)' : 'var(--t2)';
-  btn.style.background = tagsPanelOpen ? 'var(--al)' : 'var(--white)';
-  if (tagsPanelOpen) { if (isEditMode) renderTagsStep(); else resetTagsSteps(); }
-  updateTagsBtnIndicator();
-}
-
-function updateTagsBtnIndicator(){
-  const btn = document.getElementById('tagsToggleBtn'); if (!btn) return;
-  const hasAny = Object.values(sel).some(v => Array.isArray(v) ? v.length > 0 : v !== '');
-  btn.style.borderColor = tagsPanelOpen ? 'var(--accent)' : (hasAny ? 'var(--green)' : 'var(--border)');
-  btn.style.color = tagsPanelOpen ? 'var(--accent)' : (hasAny ? 'var(--green)' : 'var(--t2)');
-}
-
-function updateCond(){
-  document.getElementById('condComp').style.display=sel.ctype==='شكوى'?'block':'none';
-  document.getElementById('condReq').style.display=sel.ctype==='طلب'?'block':'none';
-}
-
-// ===== ANALYTICS =====
-let analyticsTerms=[];
-function filteredCalls(){
-  const terms=analyticsTerms.map(t=>t.toLowerCase());
-  if(!terms.length) return calls;
-  return calls.filter(c=>{
-    const fields=[c.phone,c.seq,c.ctype,c.gender,c.nat,c.branch,c.loc,c.src,c.topic,c.emo,c.child,c.notes,c.compNo,c.reqNo].map(v=>(v||'').toLowerCase());
-    return terms.every(t=>fields.some(f=>f.includes(t)));
-  });
-}
-
-function addAnalyticsTag(){
-  const inp=document.getElementById('analyticsSearch'); if(!inp) return;
-  const v=inp.value.trim(); if(!v) return;
-  if(!analyticsTerms.includes(v)) analyticsTerms.push(v);
-  inp.value='';
-  renderAnalyticsTags();
-  updateAnalytics();
-  inp.focus();
-}
-
-function addSuggestedTag(tag){
-  if(!analyticsTerms.includes(tag)) analyticsTerms.push(tag);
-  renderAnalyticsTags();
-  updateAnalytics();
-}
-
-function renderAnalyticsTags(){
-  const row=document.getElementById('filterTagsRow'); if(!row) return;
-  row.innerHTML=analyticsTerms.map(t=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--white);border:1.5px solid var(--accent);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;color:var(--accent);box-shadow:var(--ss);">${t}<button onclick="removeAnalyticsTag('${t}')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:16px;padding:0;line-height:1;margin-right:4px;">×</button></span>`).join('');
-}
-
-function removeAnalyticsTag(term){
-  analyticsTerms=analyticsTerms.filter(t=>t!==term);
-  renderAnalyticsTags();
-  updateAnalytics();
-}
-
-function clearFilters(){
-  analyticsTerms=[];
-  const inp=document.getElementById('analyticsSearch'); if(inp) inp.value='';
-  const row=document.getElementById('filterTagsRow'); if(row) row.innerHTML='';
-  updateAnalytics();
-}
-
-function renderSuggestedTags(){
-  const container=document.getElementById('suggestedTagsRow'); if(!container) return;
-  const fc=filteredCalls(); const counts={};
-  fc.forEach(c=>{
-    const tags=[c.ctype,c.branch,c.loc,c.src,c.gender,c.nat,c.emo,c.child];
-    if(c.topic) tags.push(...c.topic.split('، '));
-    tags.filter(Boolean).forEach(tag=>{
-      if(!analyticsTerms.includes(tag)){ counts[tag]=(counts[tag]||0)+1; }
-    });
-  });
-  const topTags=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(t=>t[0]);
-  if(!topTags.length){ container.innerHTML=''; return; }
-  container.innerHTML=`<span style="font-size:13px;color:var(--tl2);font-weight:800;margin-left:4px;">الأكثر ظهورا:</span> `+topTags.map(tag=>`<button onclick="addSuggestedTag('${tag}')" class="ob" style="padding:6px 14px; font-size:12px; border-radius:100px; background:var(--bg); border:1px solid var(--border); box-shadow:var(--ss);">${tag}</button>`).join('');
-}
-
-// ===== LINE CHART =====
-function getISOWeek(d){ const date=new Date(d.getTime()); date.setHours(0,0,0,0); date.setDate(date.getDate()+3-(date.getDay()+6)%7); const week1=new Date(date.getFullYear(),0,4); return 1+Math.round(((date.getTime()-week1.getTime())/86400000-3+(week1.getDay()+6)%7)/7); }
-function getGroupKey(date, scale){ const y=date.getFullYear(); const m=String(date.getMonth()+1).padStart(2,'0'); const d=String(date.getDate()).padStart(2,'0'); if(scale==='day') return `${y}-${m}-${d}`; if(scale==='week'){ const w=String(getISOWeek(date)).padStart(2,'0'); return `${y}-W${w}`; } if(scale==='month') return `${y}-${m}`; if(scale==='year') return `${y}`; }
-function formatGroupKey(key, scale){ if(scale==='day'){ const [y,m,d]=key.split('-'); return `${d} ${MONTHS[parseInt(m)-1]}`; } if(scale==='week') return `أسبوع ${key.split('-W')[1]} (${key.split('-')[0]})`; if(scale==='month'){ const [y,m]=key.split('-'); return `${MONTHS[parseInt(m)-1]} ${y}`; } return key; }
-let lineChartInstance = null;
-function updateLineChart(){
-  const scale=document.getElementById('timeScaleSelect').value;
-  const fc=filteredCalls();
-  const sorted=[...fc].sort((a,b)=>a.dt-b.dt);
-  const grouped={};
-  sorted.forEach(c=>{ const k=getGroupKey(c.dt,scale); if(!grouped[k]) grouped[k]={total:0}; grouped[k].total++; });
-  const labels=Object.keys(grouped);
-  const displayLabels=labels.map(k=>formatGroupKey(k, scale));
-  const dataTotal=labels.map(k=>grouped[k].total);
-  const ctx=document.getElementById('timelineChart').getContext('2d');
-  if(lineChartInstance) lineChartInstance.destroy();
-  lineChartInstance=new Chart(ctx,{type:'line',data:{labels:displayLabels,datasets:[{label:'إجمالي النشاط',data:dataTotal,borderColor:'#6366f1',backgroundColor:'rgba(99, 102, 241, 0.1)',tension:0.3,fill:true,borderWidth:2,pointRadius:2,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',rtl:true,labels:{font:{family:'Cairo',weight:'bold'}}},tooltip:{titleFont:{family:'Cairo'},bodyFont:{family:'Cairo'},rtl:true,textDirection:'rtl'}},scales:{y:{beginAtZero:true,position:'right',ticks:{stepSize:1,font:{family:'Cairo'}}},x:{ticks:{font:{family:'Cairo'}}}}}); }
-function updateAnalytics(){
-  const fc=filteredCalls();
-  document.getElementById('stTotal').textContent=fc.length;
-  document.getElementById('stComp').textContent=fc.filter(c=>c.ctype==='شكوى').length;
-  document.getElementById('stInq').textContent=fc.filter(c=>c.ctype==='استفسار').length;
-  document.getElementById('stReq').textContent=fc.filter(c=>c.ctype==='طلب').length;
-  updateLineChart();
-  updateBranchGrid();
-  updateChildChart();
-  updateEmoChart();
-  updateLocChart();
-  updateNatChart();
-  updateGenChart();
-  updateSrcChart();
-  updateTimeChart();
-  renderSuggestedTags();
-}
-
-function updateBranchGrid(){
-  const grid=document.getElementById('branchAnalyticsGrid'); if(!grid) return;
-  const fc=filteredCalls(); const counts={};
-  fc.forEach(c=>{ if(c.branch) counts[c.branch]=(counts[c.branch]||0)+1; });
-  const total=fc.length||1;
-  grid.innerHTML=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
-    const pct=Math.round((v/total)*100);
-    return `<div class="sc" style="text-align:center;padding:16px;"><div style="font-weight:800;font-size:16px;">${k}</div><div style="font-size:28px;font-weight:800;color:var(--accent);margin:8px 0;">${v}</div><div style="font-size:12px;color:var(--tl2);">${pct}%</div><div style="height:4px;background:#e2e8f0;border-radius:4px;margin-top:8px;"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;"></div></div></div>`;
-  }).join('')||'<div class="sc" style="text-align:center;padding:20px;color:var(--tl2);">لا توجد بيانات</div>';
-}
-
-function simpleCountChart(elId, key, labelMap){
-  const el=document.getElementById(elId); if(!el) return;
-  const fc=filteredCalls(); const counts={};
-  fc.forEach(c=>{ const v=c[key]||'غير محدد'; counts[v]=(counts[v]||0)+1; });
-  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  if(!entries.length){ el.innerHTML='<div class="ec">لا توجد بيانات</div>'; return; }
-  const total=fc.length||1;
-  el.innerHTML=entries.map(([k,v])=>{
-    const lbl=labelMap?.(k)||S.labels[k]||k;
-    const pct=Math.round((v/total)*100);
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="font-size:13px;font-weight:700;min-width:80px;">${lbl}</span><div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;"></div></div><span style="font-size:12px;font-weight:700;min-width:40px;">${v} (${pct}%)</span></div>`;
-  }).join('');
-}
-
-function updateChildChart(){ simpleCountChart('chChild','child',(k)=>S.labels[k]||CHILD_LABELS_DEF[k]||k); }
-function updateEmoChart(){ simpleCountChart('chEmo','emo'); }
-function updateLocChart(){ simpleCountChart('chLoc','loc'); }
-function updateNatChart(){ simpleCountChart('chNat','nat'); }
-function updateGenChart(){ simpleCountChart('chGen','gender'); }
-function updateSrcChart(){ simpleCountChart('chSrc','src'); }
-
-function updateTimeChart(){
-  const el=document.getElementById('chTime'); if(!el) return;
-  const fc=filteredCalls(); const counts={};
-  fc.forEach(c=>{ const slot=timeSlot(c.dt); if(slot) counts[slot]=(counts[slot]||0)+1; });
-  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  if(!entries.length){ el.innerHTML='<div class="ec">لا توجد بيانات</div>'; return; }
-  const total=fc.length||1;
-  el.innerHTML=entries.map(([k,v])=>{
-    const pct=Math.round((v/total)*100);
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="font-size:13px;font-weight:700;min-width:100px;">${k}</span><div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;"><div style="height:100%;width:${pct}%;background:var(--purple);border-radius:4px;"></div></div><span style="font-size:12px;font-weight:700;min-width:40px;">${v} (${pct}%)</span></div>`;
-  }).join('');
-}
-
-function timeSlot(dt){
-  const h=dt.getHours();
-  if(h>=12&&h<14) return '12:00~2:00م';
-  if(h>=14&&h<16) return '2:00~4:00م';
-  if(h>=16&&h<18) return '4:00~6:00م';
-  if(h>=18&&h<20) return '6:00~8:00م';
-  if(h>=20&&h<22) return '8:00~10:00م';
-  if(h>=22) return '10:00~12:00م';
-  if(h>=0&&h<2) return '12:00~2:00ص';
-  if(h>=2&&h<4) return '2:00~4:00ص';
-  if(h>=4&&h<6) return '4:00~6:00ص';
-  if(h>=6&&h<8) return '6:00~8:00ص';
-  if(h>=8&&h<10) return '8:00~10:00ص';
-  if(h>=10&&h<12) return '10:00~12:00ص';
-  return null;
-}
-
-// ===== EXPORT =====
-function exportCSV(){
-  const data=calls.map(c=>({
-    'التسلسل':c.seq,'التاريخ':fmtDate(c.dt),'الوقت':fmtTime(c.dt),
-    'الجوال':c.phone,'النوع':c.ctype,'الموضوع':c.topic,
-    'الفرع':c.branch,'الجنس':c.gender,'اللكنة':c.nat,
-    'الموقع':c.loc,'الأطفال':c.child,'النبرة':c.emo,
-    'المصدر':c.src,'رقم الشكوى':c.compNo||'','رقم الطلب':c.reqNo||'','الملاحظات':c.notes
-  }));
-  const ws=XLSX.utils.json_to_sheet(data);
-  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'المكالمات');
-  XLSX.writeFile(wb,'سجل_المكالمات.xlsx');
-}
-
-function exportTXT(){
-  const sorted=[...calls].sort((a,b)=>b.dt-a.dt);
-  let text='تقرير المكالمات\n'+'='.repeat(50)+'\n\n';
-  sorted.forEach((c,i)=>{ text+=`${i+1}. ${genSummary(c)}\n${'-'.repeat(40)}\n`; });
-  const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='تقرير_المكالمات.txt'; a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ===== IMPORT (يرسل مباشرة إلى Firebase إذا كان متصلاً) =====
-async function handleImport(event){
-  const file=event.target.files[0]; if(!file) return;
-  if (!navigator.onLine) return toast('يجب الاتصال بالإنترنت لاستيراد البيانات', 'err');
-
-  const reader=new FileReader();
-  reader.onload=async function(e){
-    try {
-      const wb=XLSX.read(e.target.result,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws);
-      if(!rows.length){ toast('الملف فارغ','err'); return; }
-
-      const imported=[];
-      rows.forEach((r,i)=>{
-        const seq=r['التسلسل']||r['seq']||`IMP${String(i+1).padStart(4,'0')}`;
-        const dateStr=r['التاريخ']||r['date']||'';
-        const timeStr=r['الوقت']||r['time']||'';
-        let dt=new Date();
-        if(dateStr){ const parts=dateStr.split(/[\s\/-]+/); if(parts.length===2){ const mIdx=MONTHS.findIndex(m=>parts[0].includes(m)||parts[1].includes(m)); if(mIdx>=0){ const d=parseInt(parts[0])||parseInt(parts[1]); dt.setMonth(mIdx); dt.setDate(d||1); } } }
-        imported.push({
-          seq, dt,
-          phone: r['الجوال']||r['phone']||'',
-          ctype: r['النوع']||r['ctype']||'',
-          topic: r['الموضوع']||r['topic']||'',
-          branch: r['الفرع']||r['branch']||'',
-          gender: r['الجنس']||r['gender']||'',
-          nat: r['اللكنة']||r['nat']||'',
-          loc: r['الموقع']||r['loc']||'',
-          child: r['الأطفال']||r['child']||'',
-          emo: r['النبرة']||r['emo']||'',
-          src: r['المصدر']||r['src']||'',
-          compNo: r['رقم الشكوى']||r['compNo']||'',
-          reqNo: r['رقم الطلب']||r['reqNo']||'',
-          notes: r['الملاحظات']||r['notes']||''
-        });
-      });
-
-      toast(`جاري استيراد ${imported.length} سجل...`,'ok');
-
-      // حفظ مباشر في Firebase
-      try {
-        await FB.batchSave(imported);
-      } catch(fbErr) {
-        console.warn('تعذر الحفظ في Firebase:', fbErr.message);
-      }
-
-      // حفظ محلياً وتحديث القائمة
-      for (const rec of imported) {
-        const exists=calls.findIndex(c=>c.seq===rec.seq);
-        if(exists>=0) calls[exists]=rec; else calls.unshift(rec);
-        await saveCallDB(rec);
-      }
-
-      renderFilteredLog(); updateBadge();
-      toast(`تم استيراد ${imported.length} سجل بنجاح`,'ok');
-    } catch(err){ toast('فشل في قراءة الملف: '+err.message,'err'); }
-  };
-  reader.readAsArrayBuffer(file);
-  event.target.value='';
-}
-
-// ===== MAINTENANCE =====
-const MSECS=[
-  {key:'nat',lbl:'الجنسيات',ph:'أضف جنسية...'},
-  {key:'branches',lbl:'الفروع',ph:'أضف فرعاً...'},
-  {key:'locs',lbl:'مواقع العميل',ph:'أضف موقعاً...'},
-  {key:'emos',lbl:'مشاعر العميل',ph:'أضف مشاعر...'},
-  {key:'srcs',lbl:'مصادر الوصول',ph:'أضف مصدراً...'}
-];
-
-function renderMBody(){
-  const body=document.getElementById('mBody'); if(!body) return;
-  let html='';
-  // قائمة ديناميكية
-  MSECS.forEach(sec=>{
-    html+=`<div style="margin-bottom:24px;"><div style="font-weight:800;font-size:15px;margin-bottom:10px;color:var(--text);">${sec.lbl}</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="mTags-${sec.key}">`;
-    (S[sec.key]||[]).forEach((item,i)=>{ html+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;">${item}<button onclick="removeMItem('${sec.key}',${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;margin-right:4px;">×</button></span>`; });
-    html+=`</div><div style="display:flex;gap:8px;"><input type="text" id="mInput-${sec.key}" placeholder="${sec.ph}" class="fi" style="flex:1;" onkeydown="if(event.key==='Enter') addMItem('${sec.key}')" /><button class="btn-p" onclick="addMItem('${sec.key}')" style="height:38px;padding:8px 16px;">إضافة</button></div></div>`;
-  });
-
-  // هاتف الإدارة
-  html+=`<div style="margin-bottom:24px;"><div style="font-weight:800;font-size:15px;margin-bottom:10px;color:var(--text);">هاتف الإدارة</div><div style="display:flex;gap:8px;"><input type="text" id="mAdminPhone" value="${S.adminPhone||''}" placeholder="05XXXXXXXX" class="fi" style="flex:1;" /><button class="btn-p" onclick="saveMAdminPhone()" style="height:38px;padding:8px 16px;">حفظ</button></div></div>`;
-
-  // هواتف الفروع
-  html+=`<div style="margin-bottom:24px;"><div style="font-weight:800;font-size:15px;margin-bottom:10px;color:var(--text);">هواتف الفروع</div>`;
-  S.branches.forEach(b=>{
-    html+=`<div style="display:flex;gap:8px;margin-bottom:8px;"><span style="min-width:120px;font-weight:700;padding:8px 12px;background:var(--bg);border-radius:8px;text-align:center;">${b}</span><input type="text" id="mBranchPhone-${b}" value="${S.branchPhones[b]||''}" placeholder="05XXXXXXXX" class="fi" style="flex:1;" /><button class="btn-s" onclick="saveMBranchPhone('${b}')" style="height:38px;padding:4px 12px;">حفظ</button></div>`;
-  });
-  html+=`</div>`;
-
-  // تسميات مخصصة
-  html+=`<div style="margin-bottom:24px;"><div style="font-weight:800;font-size:15px;margin-bottom:10px;color:var(--text);">تسميات مخصصة</div><div style="display:flex;gap:8px;margin-bottom:8px;"><input type="text" id="mLabelKey" placeholder="المفتاح" class="fi" style="flex:1;" /><input type="text" id="mLabelVal" placeholder="التسمية" class="fi" style="flex:1;" /><button class="btn-p" onclick="addMLabel()" style="height:38px;padding:8px 16px;">إضافة</button></div><div id="mLabelsList" style="display:flex;flex-wrap:wrap;gap:6px;">`;
-  Object.entries(S.labels||{}).forEach(([k,v])=>{
-    html+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--pl);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;">${k}=${v}<button onclick="removeMLabel('${k}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;margin-right:4px;">×</button></span>`;
-  });
-  html+=`</div></div>`;
-
-  // مواضيع مخصصة
-  html+=`<div style="margin-bottom:24px;"><div style="font-weight:800;font-size:15px;margin-bottom:10px;color:var(--text);">المواضيع حسب النوع</div>`;
-  for(const [ctype,topics] of Object.entries(S.topicMap)){
-    html+=`<div style="margin-bottom:12px;"><strong>${ctype}:</strong><div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;" id="mTopics-${ctype}">`;
-    topics.forEach((t,i)=>{ html+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--gl);border:1px solid var(--green);color:var(--green);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;">${t}<button onclick="removeMTopic('${ctype}',${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;">×</button></span>`; });
-    html+=`</div><div style="display:flex;gap:6px;"><input type="text" id="mTopicInput-${ctype}" placeholder="أضف موضوعاً..." class="fi" style="flex:1;" onkeydown="if(event.key==='Enter') addMTopic('${ctype}')" /><button class="btn-s" onclick="addMTopic('${ctype}')" style="height:38px;padding:4px 12px;">+</button></div></div>`;
-  }
-  html+=`</div>`;
-
-  // زر مزامنة
-  html+=`<div style="border-top:1px solid var(--border);padding-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
-    <button class="btn-p" onclick="syncAllToFirebase()">مزامنة مع Firebase</button>
-    <button class="btn-s" onclick="saveSettings().then(()=>toast('تم حفظ الإعدادات','ok'))" style="height:38px;">حفظ الإعدادات</button>
-  </div>`;
-
-  body.innerHTML=html;
-}
-
-function addMItem(key){
-  const inp=document.getElementById('mInput-'+key); if(!inp) return;
-  const v=inp.value.trim(); if(!v) return;
-  if(!S[key].includes(v)){
-    S[key].push(v);
-    saveSettings();
-    renderMBody();
-    toast('تمت الإضافة','ok');
-  }
-  inp.value='';
-}
-
-function removeMItem(key,idx){
-  S[key].splice(idx,1);
-  saveSettings();
-  renderMBody();
-}
-
-function saveMAdminPhone(){
-  const inp=document.getElementById('mAdminPhone'); if(!inp) return;
-  S.adminPhone=inp.value.trim();
-  saveSettings();
-  toast('تم حفظ رقم الإدارة','ok');
-}
-
-function saveMBranchPhone(branch){
-  const inp=document.getElementById('mBranchPhone-'+branch); if(!inp) return;
-  S.branchPhones[branch]=inp.value.trim();
-  saveSettings();
-  toast('تم حفظ رقم '+branch,'ok');
-}
-
-function addMLabel(){
-  const k=document.getElementById('mLabelKey')?.value.trim();
-  const v=document.getElementById('mLabelVal')?.value.trim();
-  if(!k||!v) return;
-  S.labels[k]=v;
-  saveSettings();
-  renderMBody();
-  toast('تم حفظ التسمية','ok');
-}
-
-function removeMLabel(k){
-  delete S.labels[k];
-  saveSettings();
-  renderMBody();
-}
-
-function addMTopic(ctype){
-  const inp=document.getElementById('mTopicInput-'+ctype); if(!inp) return;
-  const v=inp.value.trim(); if(!v) return;
-  if(!S.topicMap[ctype]) S.topicMap[ctype]=[];
-  S.topicMap[ctype].push(v);
-  saveSettings();
-  renderMBody();
-}
-
-function removeMTopic(ctype,idx){
-  S.topicMap[ctype].splice(idx,1);
-  saveSettings();
-  renderMBody();
-}
-
-async function syncAllToFirebase(){
-  if (!navigator.onLine) return toast('لا يوجد اتصال بالإنترنت', 'err');
-  if (!calls.length) return toast('لا توجد بيانات للمزامنة', 'err');
-  try {
-    await FB.batchSave(calls);
-    toast('تمت المزامنة بنجاح ✓','ok');
-  } catch(e) {
-    toast('فشل المزامنة: '+e.message,'err');
-  }
-}
-
-// ===== INIT =====
-async function initApp(){
-  await initDB();
-  await loadSettings();
-
-  // محاولة تحميل البيانات من Firebase إذا كان متصلاً
-  if (navigator.onLine && FB.ready()) {
-    try {
-      const fbData = await FB.getAll();
-      if (fbData && fbData.length > 0) {
-        calls = fbData;
-        await saveAllCallsDB(calls);
-        console.log(`✓ تم تحميل ${calls.length} سجل من Firebase`);
-      }
-    } catch(e) {
-      console.warn('تعذر التحميل من Firebase, تحميل من المحلي:', e.message);
-      calls = await getAllCallsDB();
-    }
-  } else {
-    calls = await getAllCallsDB();
-  }
-
-  renderFilteredLog();
-  updateBadge();
-  updateSeqLabel();
-
-  // مستمع للاتصال بالإنترنت لإعادة المزامنة
-  window.addEventListener('online', async () => {
-    toast('تم استعادة الاتصال - جاري المزامنة...', 'ok');
-    try {
-      if (calls.length > 0) await FB.batchSave(calls);
-      const fbData = await FB.getAll();
-      if (fbData && fbData.length > 0) {
-        calls = fbData;
-        await saveAllCallsDB(calls);
-        renderFilteredLog();
-        updateBadge();
-      }
-    } catch(e) { console.warn('Auto-sync failed:', e.message); }
-  });
-}
-
-// بدء التطبيق
-let _domReady = false, _initStarted = false;
-function tryInit(){ if(_domReady && !_initStarted){ _initStarted = true; initApp(); } }
-document.addEventListener('DOMContentLoaded', () => { _domReady = true; tryInit(); });
-setTimeout(() => { if(!_initStarted){ _domReady = true; tryInit(); } }, 500);
-</script>
+<script type="module" src="script.js"></script>
 </body>
 </html>
