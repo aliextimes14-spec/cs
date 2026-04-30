@@ -1850,9 +1850,15 @@ function switchTab(id, btn) {
 // ===== TAGS STEPS =====
 function getStepItems(step) {
   if (step.items) return step.items;
-  if (step.itemsKey) {
-    return S[step.itemsKey] || [];
+  if (step.itemsKey) return S[step.itemsKey] || [];
+  if (step.id === 'topic') {
+    if (sel.ctype && S.topicMap[sel.ctype]) {
+      return S.topicMap[sel.ctype];
+    }
+    return [];
   }
+  return [];
+}
   if (step.id === 'topic') {
     if (sel.ctype) {
       // تأكد من وجود المفتاح وأعد القيم الافتراضية إذا كان فارغاً أو غير موجود
@@ -1943,13 +1949,43 @@ function selectOptStep(btn, grp, stepId) {
   if (grp === 'topic') {
     const v = btn.dataset.val;
     const idx = sel.topics.indexOf(v);
-    if (idx >= 0) { sel.topics.splice(idx, 1);
-      btn.classList.remove('sel'); } else { sel.topics.push(v);
-      btn.classList.add('sel'); }
+    if (idx >= 0) { sel.topics.splice(idx, 1); btn.classList.remove('sel'); }
+    else { sel.topics.push(v); btn.classList.add('sel'); }
     touchDT();
     return;
   }
 
+  const alreadySelected = btn.classList.contains('sel');
+  document.querySelectorAll(`[data-group="${grp}"]`).forEach(b => b.classList.remove('sel'));
+
+  if (alreadySelected) {
+    sel[grp] = '';
+  } else {
+    btn.classList.add('sel');
+    sel[grp] = btn.dataset.val;
+  }
+
+  if (grp === 'ctype') {
+    sel.topics = [];
+    updateCond();
+    // إصلاح: التأكد من وجود المواضيع الافتراضية
+    if (!S.topicMap[sel.ctype] || S.topicMap[sel.ctype].length === 0) {
+      S.topicMap[sel.ctype] = [...(S_DEFAULT.topicMap[sel.ctype] || [])];
+    }
+  }
+
+  touchDT();
+  updateTagsBtnIndicator();
+
+  if (!alreadySelected && sel[grp] !== '') {
+    if (grp === 'ctype') {
+      tagsStepNext();          // ينتقل للخطوة التالية (الموضوع)
+      renderTagsStep();        // يعيد رسم الخطوة فوراً
+    } else {
+      setTimeout(() => tagsStepNext(), 250);
+    }
+  }
+}
   const alreadySelected = btn.classList.contains('sel');
   document.querySelectorAll(`[data-group="${grp}"]`).forEach(b => b.classList.remove('sel'));
 
