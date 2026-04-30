@@ -411,9 +411,6 @@ body {
 
 <header class="hdr">
   <div class="logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-    </div>
     <span class="logo-txt">اي ام سبيشل</span>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
@@ -421,7 +418,7 @@ body {
       <div class="fb-dot" id="fbDot"></div>
       <span id="fbStatusText">Firebase</span>
     </div>
-    <div class="hdr-clock" style="display:flex;align-items:center;gap:4px;padding:4px 12px;">
+    <div class="hdr-clock" style="display:none;align-items:center;gap:4px;padding:4px 12px;">
       <button onclick="changeFontSize(-1)" title="تصغير الخط" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:15px;font-weight:800;padding:4px;transition:color .2s;">−</button>
       <span id="fontSizeLabel" style="font-size:13px;color:var(--text);min-width:40px;text-align:center;">100%</span>
       <button onclick="changeFontSize(1)" title="تكبير الخط" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:15px;font-weight:800;padding:4px;transition:color .2s;">+</button>
@@ -438,10 +435,10 @@ body {
 
 <div class="tab-content active" id="tab-form">
   <div class="fc">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;position:relative;">
-      <span id="seqLabel" style="font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
-      <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:8px 12px;"><span style="font-size:15px;line-height:1;">⚙️</span></button>
-      <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:8px 16px;">الأوسمة</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:nowrap;position:relative;overflow-x:auto;">
+      <span id="seqLabel" style="display:none;font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
+      <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:8px 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+      <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:8px 14px;font-weight:800;font-size:15px;">#</button>
       
       <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
         <span id="dateBtnText">التاريخ</span>
@@ -453,12 +450,11 @@ body {
         <input type="time" id="timePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onTimePick(this.value)" />
       </button>
 
-      <button class="btn-s" onclick="clearForm()" style="padding:8px 16px;">مسح</button>
-      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 24px;">حفظ</button>
+      <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 18px;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
     </div>
-    <div id="dateSettingsPanel" style="display:none;margin-bottom:16px;background:var(--tl);border:1px solid rgba(6,182,212,.3);border-radius:12px;padding:12px 16px;">
+    <div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <span style="font-size:13px;font-weight:800;color:var(--teal);">⚙️ تاريخ ثابت</span>
         <span id="fixedDateDisplay" style="font-size:14px;font-weight:800;color:var(--text);flex:1;min-width:60px;">—</span>
         
         <button class="btn-p" style="position:relative; padding:8px 16px; font-size:12px; overflow:hidden;">
@@ -627,9 +623,8 @@ body {
   </div>
 </div>
 
-<button class="btn-maint" onclick="switchTab('maint', document.querySelector('[data-tab=maint]') || this)">
+<button class="btn-maint" onclick="switchTab('maint', document.querySelector('[data-tab=maint]') || this)" title="الإعدادات">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-  الإعدادات
 </button>
 
 <div class="toast" id="toast"></div>
@@ -810,7 +805,7 @@ let callDT = null;
 const sel = {gender:'',nat:'',branch:'',loc:'',src:'',topics:[],ctype:'',child:'',emo:''};
 
 // ===== TIME/DATE =====
-function fmtTime(d){ let h=d.getHours(), m=String(d.getMinutes()).padStart(2,'0'); const ap=h>=12?'م':'ص'; h=h%12||12; return `${h}:${m} ${ap}`; }
+function fmtTime(d){ let h=String(d.getHours()).padStart(2,'0'), m=String(d.getMinutes()).padStart(2,'0'); return `${h}:${m}`; }
 function fmtDate(d){ return `${d.getDate()} ${MONTHS[d.getMonth()]}`; }
 function fmtDT(d){ return `${fmtDate(d)}  ${fmtTime(d)}`; }
 function dayKey(d){ return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
@@ -934,7 +929,7 @@ function toggleDateSettings(){
   if(gear){ gear.style.borderColor=active?'var(--teal)':'var(--border)'; gear.style.color=active?'var(--teal)':'var(--t2)'; gear.style.background=active?'var(--tl)':'var(--white)'; }
   updateFixedDateDisplay();
 }
-function updateFixedDateDisplay(){ const lbl=document.getElementById('fixedDateDisplay'); if(lbl) lbl.textContent=defaultDate?fmtDate(defaultDate):'لم يتم تحديد تاريخ ثابت'; }
+function updateFixedDateDisplay(){ const lbl=document.getElementById('fixedDateDisplay'); if(lbl) lbl.textContent=defaultDate?fmtDate(defaultDate):'—'; }
 function onDefaultDatePick(v){ if(!v) return; const [y,m,d]=v.split('-').map(Number); const nd=new Date(); nd.setFullYear(y,m-1,d); defaultDate=nd; callDT=null; touchDT(); updateDefaultDateUI(); updateFixedDateDisplay(); const gear=document.getElementById('dateSettingsBtn'); if(gear) gear.style.color='var(--amber)'; }
 function resetDefaultDate(){ defaultDate=null; callDT=null; updateDefaultDateUI(); updateFixedDateDisplay(); updateSeqLabel(); const gear=document.getElementById('dateSettingsBtn'); if(gear){ gear.style.borderColor='var(--border)'; gear.style.color='var(--t2)'; gear.style.background='var(--white)'; } }
 function updateDefaultDateUI(){ const db=document.getElementById('dateBtnText'); if(defaultDate){ if(db) db.textContent=callDT?fmtDate(callDT):fmtDate(defaultDate); } else { if(db && !callDT) db.textContent='التاريخ'; } updateSeqLabel(); }
@@ -1037,7 +1032,7 @@ async function submitCall(){
       const idx=calls.findIndex(c=>c.seq===editSeq);
       if(idx!==-1) calls[idx]=rec;
       const savedSeq=editSeq; editSeq=null;
-      document.getElementById('submitBtn').textContent='حفظ';
+      document.getElementById('submitBtn').innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
       renderLog(); updateBadge(); clearForm(); toast('تم تحديث المكالمة','ok');
       const logBtn=document.querySelector('[data-tab="log"]'); switchTab('log',logBtn);
       requestAnimationFrame(()=>{ const card=document.getElementById('dtl-'+savedSeq); if(card){ if(!card.classList.contains('open')) togCard(savedSeq); const el=card.closest('.cc'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); } } });
@@ -1105,7 +1100,7 @@ function editCall(seq){
   
   sel.gender=c.gender; sel.nat=c.nat; sel.branch=c.branch; sel.loc=c.loc; sel.src=c.src||''; sel.topics=c.topic?c.topic.split('، ').filter(Boolean):[]; sel.ctype=c.ctype; sel.child=c.child||''; sel.emo=c.emo||'';
   renderAllGroups(); updateCond();
-  document.getElementById('submitBtn').textContent='تعديل ✓'; document.getElementById('custNotice').style.display='none';
+  document.getElementById('submitBtn').innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'; document.getElementById('custNotice').style.display='none';
   const formBtn=document.querySelector('[data-tab="form"]'); switchTab('form',formBtn); window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1601,7 +1596,79 @@ function buildTextView(){
 }
 function copyAllText(){ const body=document.getElementById('textViewBody'); const textToCopy=body.innerText||body.textContent; if(!textToCopy.trim()) return toast('لا يوجد نص للنسخ','err'); navigator.clipboard.writeText(textToCopy).then(()=>toast('تم نسخ النص كاملاً','ok')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=textToCopy; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('تم نسخ النص كاملاً','ok'); }); }
 
-// ===== APP INIT =====
+// ===== OFFLINE QUEUE =====
+const OFFLINE_QUEUE_KEY = 'CS_OfflineQueue';
+function getOfflineQueue() {
+  try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveOfflineQueue(q) {
+  try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q)); } catch(e) {}
+}
+function addToOfflineQueue(action, rec) {
+  const q = getOfflineQueue();
+  // remove duplicate seq
+  const filtered = q.filter(item => !(item.seq === (rec ? rec.seq : action.seq)));
+  filtered.push({ action, rec: rec ? {...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : rec.dt} : null, seq: rec ? rec.seq : action });
+  saveOfflineQueue(filtered);
+}
+async function syncOfflineQueue() {
+  if (!window._firestoreReady || !navigator.onLine) return;
+  const q = getOfflineQueue();
+  if (!q.length) return;
+  const remaining = [];
+  for (const item of q) {
+    try {
+      if (item.action === 'save' && item.rec) {
+        const rec = {...item.rec, dt: new Date(item.rec.dt)};
+        await saveCallFirestore(rec);
+      } else if (item.action === 'delete' && item.seq) {
+        await deleteCallFirestore(item.seq);
+      }
+    } catch(e) { remaining.push(item); }
+  }
+  saveOfflineQueue(remaining);
+  if (remaining.length < q.length) toast(`تم مزامنة ${q.length - remaining.length} سجل`, 'ok');
+}
+
+// Override saveCallFirestore to queue when offline
+const _origSaveCallFirestore = saveCallFirestore;
+window.saveCallFirestore = async function(rec) {
+  if (!navigator.onLine || !window._firestoreReady) {
+    addToOfflineQueue('save', rec);
+    return;
+  }
+  try {
+    await _origSaveCallFirestore(rec);
+  } catch(e) {
+    addToOfflineQueue('save', rec);
+  }
+};
+
+// Override deleteCallFirestore to queue when offline
+const _origDeleteCallFirestore = deleteCallFirestore;
+window.deleteCallFirestore = async function(seq) {
+  if (!navigator.onLine || !window._firestoreReady) {
+    addToOfflineQueue('delete', {seq});
+    return;
+  }
+  try {
+    await _origDeleteCallFirestore(seq);
+  } catch(e) {
+    addToOfflineQueue('delete', {seq});
+  }
+};
+
+// Sync when back online
+window.addEventListener('online', () => {
+  setFBStatus('online');
+  syncOfflineQueue();
+});
+window.addEventListener('offline', () => {
+  setFBStatus('error');
+});
+
+// Check queue on startup
+setTimeout(syncOfflineQueue, 2000);
 window.initAppAfterFirebase = async function() {
   try {
     await initDB();
