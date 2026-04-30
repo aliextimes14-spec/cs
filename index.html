@@ -1179,45 +1179,76 @@ body {
         <input type="time" id="timePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onTimePick(this.value)" />
       </button>
 
-      <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 18px;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
-    </div>
-    <div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <span id="fixedDateDisplay" style="font-size:14px;font-weight:800;color:var(--text);flex:1;min-width:60px;">—</span>
-        <button class="btn-p" style="position:relative; padding:8px 16px; font-size:12px; overflow:hidden;">
-          <span>تعديل</span>
-          <input type="date" id="defaultDatePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDefaultDatePick(this.value)" />
-        </button>
-        <button id="resetDefaultDateBtn" onclick="resetDefaultDate()" class="btn-s" style="padding:8px 16px; font-size:12px; color:var(--teal); border-color:var(--teal);">إزالة ↺</button>
-      </div>
-    </div>
+  <!-- ===== صف الأزرار العلوية (التاريخ، الوقت، المسح، الحفظ) ===== -->
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:nowrap;position:relative;overflow-x:auto;">
+  <span id="seqLabel" style="display:none;font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
+  <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:8px 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+  <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:8px 14px;font-weight:800;font-size:15px;">#</button>
 
-    <!-- ===== TAGS PANEL مع الخطوات المتتابعة ===== -->
-    <div id="tagsPanel" style="display:none;margin-bottom:20px;" data-step-controlled="true">
-      <!-- حاوية الخطوة الحالية - تولد ديناميكياً -->
-      <div id="tagsStepContainer"></div>
-      <!-- أزرار التنقل بين الخطوات -->
-      <div id="tagsStepNav" style="display:flex;gap:8px;margin-top:12px;justify-content:space-between;">
-        <button class="btn-s" id="tagsPrevBtn" onclick="tagsStepPrev()" style="display:none;">← السابق</button>
-        <span id="tagsStepIndicator" style="font-size:12px;font-weight:700;color:var(--tl2);align-self:center;"></span>
-        <button class="btn-s" id="tagsSkipBtn" onclick="tagsStepNext()">تخطي ←</button>
-      </div>
-      <!-- شروط إضافية -->
-      <div class="cond" id="condComp" style="margin-top:12px;display:none;"><input type="text" class="fi" id="compNo" placeholder="رقم الشكوى..." /></div>
-      <div class="cond" id="condReq" style="margin-top:12px;display:none;"><input type="text" class="fi" id="reqNo" placeholder="رقم الطلب..." /></div>
-    </div>
+  <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
+    <span id="dateBtnText">التاريخ</span>
+    <input type="date" id="datePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDatePick(this.value)" />
+  </button>
 
-    <div class="fg" id="step-phone-section">
-      <input type="tel" inputmode="numeric" class="fi" id="phone" placeholder="05XXXXXXXX" maxlength="10" oninput="onPhoneInput(this.value)" style="font-size:18px;font-weight:800;letter-spacing:1px;" />
-    </div>
-    <div class="fg" id="step-details-section" style="margin-top:16px; display:none;">
-      <textarea class="fta" id="details" placeholder="ماذا قال العميل...؟"></textarea>
-    </div>
-    <div class="notice" id="custNotice" style="margin-top:12px; display:none; align-items:center; gap:10px; background:var(--al); border-radius:12px; padding:12px 16px; font-weight:700; color:var(--accent);">
-      <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
-      <span id="custNoticeText">عميل مسجل</span>
-    </div>
+  <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
+    <span id="timeBtnText">الوقت</span>
+    <input type="time" id="timePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onTimePick(this.value)" />
+  </button>
+
+  <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+  <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 18px;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
+</div>
+
+<!-- ===== لوحة إعدادات التاريخ (تظهر عند الحاجة) ===== -->
+<div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span id="fixedDateDisplay" style="font-size:14px;font-weight:800;color:var(--text);flex:1;min-width:60px;">—</span>
+    <button class="btn-p" style="position:relative; padding:8px 16px; font-size:12px; overflow:hidden;">
+      <span>تعديل</span>
+      <input type="date" id="defaultDatePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDefaultDatePick(this.value)" />
+    </button>
+    <button id="resetDefaultDateBtn" onclick="resetDefaultDate()" class="btn-s" style="padding:8px 16px; font-size:12px; color:var(--teal); border-color:var(--teal);">إزالة ↺</button>
+  </div>
+</div>
+
+<!-- ===== حقل رقم الهاتف (يظهر دائماً) ===== -->
+<div class="fg" id="step-phone-section">
+  <input type="tel" inputmode="numeric" class="fi" id="phone" placeholder="05XXXXXXXX" maxlength="10" oninput="onPhoneInput(this.value)" style="font-size:18px;font-weight:800;letter-spacing:1px;" />
+</div>
+
+<!-- ===== حقل تفاصيل المكالمة (يظهر بعد الخطوة الأولى) ===== -->
+<div class="fg" id="step-details-section" style="margin-top:16px; display:none;">
+  <textarea class="fta" id="details" placeholder="ماذا قال العميل...؟"></textarea>
+</div>
+
+<!-- ===== لوحة الأوسمة (تظهر بعد التفاصيل) ===== -->
+<div id="tagsPanel" style="display:none;margin-bottom:20px;" data-step-controlled="true">
+  <!-- حاوية الخطوة الحالية - تولد ديناميكياً -->
+  <div id="tagsStepContainer"></div>
+  <!-- أزرار التنقل بين الخطوات -->
+  <div id="tagsStepNav" style="display:flex;gap:8px;margin-top:12px;justify-content:space-between;">
+    <button class="btn-s" id="tagsPrevBtn" onclick="tagsStepPrev()" style="display:none;">← السابق</button>
+    <span id="tagsStepIndicator" style="font-size:12px;font-weight:700;color:var(--tl2);align-self:center;"></span>
+    <button class="btn-s" id="tagsSkipBtn" onclick="tagsStepNext()">تخطي ←</button>
+  </div>
+  <!-- شروط إضافية (تظهر حسب نوع المكالمة) -->
+  <div class="cond" id="condComp" style="margin-top:12px;display:none;"><input type="text" class="fi" id="compNo" placeholder="رقم الشكوى..." /></div>
+  <div class="cond" id="condReq" style="margin-top:12px;display:none;"><input type="text" class="fi" id="reqNo" placeholder="رقم الطلب..." /></div>
+</div>
+
+<!-- ===== شريط إشعار العميل المسجل (يظهر تلقائياً عند وجود مكالمات سابقة) ===== -->
+<div class="notice" id="custNotice" style="margin-top:12px; display:none; align-items:center; gap:10px; background:var(--al); border-radius:12px; padding:12px 16px; font-weight:700; color:var(--accent);">
+  <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
+  <span id="custNoticeText">عميل مسجل</span>
+</div>
+
+<!-- ===== زر التالي (يظهر بعد إدخال الهاتف) ===== -->
+<div id="nextBtnWrap" style="margin-top:16px; display:flex; justify-content:flex-start;">
+  <button class="btn-p" id="nextStepBtn" onclick="goNextStep()" style="padding:10px 28px; font-size:14px; display:flex; align-items:center; gap:8px;">
+    التالي
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+</div>
     <div id="nextBtnWrap" style="margin-top:16px; display:flex; justify-content:flex-start;">
       <button class="btn-p" id="nextStepBtn" onclick="goNextStep()" style="padding:10px 28px; font-size:14px; display:flex; align-items:center; gap:8px;">
         التالي
