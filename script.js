@@ -523,7 +523,7 @@ window.updateDefaultDateUI = function () {
 };
 window.updateSeqLabel = function () {
   const lbl = document.getElementById('seqLabel');
-  if (lbl) lbl.textContent = 'تسلسل ' + (window.editSeq !== null ? window.editSeq : window.buildSeq(window.callDT || new Date()));
+  if (lbl) lbl.textContent = '* ' + (window.editSeq !== null ? window.editSeq : window.buildSeq(window.callDT || new Date()));
 };
 window.updateDTBtns = function () {
   if (!window.callDT) return;
