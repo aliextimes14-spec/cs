@@ -6,12 +6,14 @@
 <!-- Firebase SDKs -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getFirestore, collection, doc, setDoc, writeBatch,
-    getDoc, getDocs, deleteDoc, onSnapshot,
-    query, orderBy, enableIndexedDbPersistence
+  import { 
+    getFirestore, collection, doc, setDoc, getDoc, getDocs, 
+    deleteDoc, query, orderBy, enableIndexedDbPersistence,
+    onSnapshot, serverTimestamp, writeBatch, limit, where,
+    getDocsFromCache, getDocsFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+  // ===== FIREBASE CONFIG =====
   const firebaseConfig = {
     apiKey: "AIzaSyCWVLIZMsWFeGvBjU69iQeHc4LkXx_TgLg",
     authDomain: "customer-service-ddb34.firebaseapp.com",
@@ -21,45 +23,42 @@
     appId: "1:109576870374:web:e1a4c7dc726543ebc7de27"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const firestore = getFirestore(app);
+  try {
+    const app = initializeApp(firebaseConfig);
+    const firestore = getFirestore(app);
 
-  // تفعيل الـ offline cache المدمج في Firestore
-  enableIndexedDbPersistence(firestore).catch(() => {});
-
-  // ===== تصدير الدوال للـ window =====
-  window._fsCollection  = (name) => collection(firestore, name);
-  window._fsDoc         = (colRef, id) => doc(colRef, id);
-  window._fsSetDoc      = setDoc;
-  window._fsGetDoc      = getDoc;
-  window._fsGetDocs     = getDocs;
-  window._fsDeleteDoc   = deleteDoc;
-  window._fsWriteBatch  = () => writeBatch(firestore);
-  window._fsQuery       = query;
-  window._fsOrderBy     = orderBy;
-  window._firestoreReady = true;
-
-  // ===== onSnapshot: مزامنة لحظية من السيرفر =====
-  // يُطلق فور أي تغيير في Firestore على أي جهاز
-  window._startRealtimeSync = function() {
-    const col = collection(firestore, 'calls');
-    return onSnapshot(col, { includeMetadataChanges: false }, (snapshot) => {
-      snapshot.docChanges().forEach(change => {
-        const data = change.doc.data();
-        const rec  = { ...data, dt: new Date(data.dt) };
-        if (change.type === 'added' || change.type === 'modified') {
-          window._onFBRecord && window._onFBRecord(rec);
-        } else if (change.type === 'removed') {
-          window._onFBDelete && window._onFBDelete(rec.seq);
-        }
-      });
-    }, (err) => {
-      console.warn('onSnapshot error:', err.message);
+    // تفعيل الـ persistence المدمجة في Firestore (offline cache)
+    enableIndexedDbPersistence(firestore).catch((err) => {
+      console.warn('Persistence failed:', err.code);
     });
-  };
 
-  // إطلاق حدث جاهزية Firebase
-  document.addEventListener('DOMContentLoaded', () => {
+    window._fsCollection = (name) => collection(firestore, name);
+    window._fsDoc = (colRef, id) => doc(colRef, id);
+    window._fsSetDoc = setDoc;
+    window._fsGetDoc = getDoc;
+    window._fsGetDocs = getDocs;
+    window._fsGetDocsFromCache = getDocsFromCache;
+    window._fsGetDocsFromServer = getDocsFromServer;
+    window._fsDeleteDoc = deleteDoc;
+    window._fsQuery = query;
+    window._fsOrderBy = orderBy;
+    window._fsLimit = limit;
+    window._fsWhere = where;
+    window._fsWriteBatch = () => writeBatch(firestore);
+    window._fsServerTimestamp = serverTimestamp;
+    window._fsOnSnapshot = onSnapshot;
+    window._firestoreReady = true;
+
+    // ===== HASH آخر تحديث للكشف عن التغييرات (يوفر القراءات) =====
+    window._fsGetMetaDoc = () => doc(collection(firestore, '_meta'), 'lastUpdate');
+
+    console.log('Firebase initialized ✓');
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    window._firestoreReady = false;
+  }
+
+  window.addEventListener('load', () => {
     document.dispatchEvent(new CustomEvent('firebaseReady'));
   });
 </script>
@@ -120,15 +119,7 @@ body {
   box-shadow: var(--ss);
 }
 .logo { display: flex; align-items: center; gap: 12px; }
-.logo-mark {
-  width: 38px; height: 38px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
-}
-.logo-mark svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2.5; }
-.logo-txt { font-family: 'Tajawal', sans-serif; font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+.logo-txt { font-family: 'Tajawal', sans-serif; font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; transition: color 0.5s ease; }
 .hdr-clock {
   background: var(--white);
   border: 1px solid var(--border);
@@ -355,6 +346,7 @@ body {
 .dv { font-size: 13px; font-weight: 700; color: var(--text); }
 .dnotes { background: var(--ambl); border-left: 3px solid var(--amber); border-radius: 8px; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #925c0e; line-height: 1.7; margin-bottom: 12px; }
 
+/* ===== TAGS PANEL — ألوان واضحة لكل صف ===== */
 .trow { display: flex; flex-direction: column; gap: 0; background: var(--white); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
 .tline { display: flex; flex-wrap: wrap; gap: 1px; width: 100%; border-bottom: 1px solid var(--border); background: var(--border); }
 .tline:last-child { border-bottom: none; }
@@ -363,17 +355,65 @@ body {
   text-align: center; transition: all 0.2s ease; cursor: pointer; font-family: 'Cairo', sans-serif; font-weight: 700;
   border-radius: 0; font-size: 13px; border: none; padding: 10px 6px; background: var(--white);
 }
-.tline .ob:hover { background: #f8fafc; color: var(--accent); }
-.tl-solid-teal .ob.sel { background: var(--teal); color: #fff; }
-.tl-solid-green .ob.sel { background: var(--green); color: #fff; }
-.tl-wide-blue .ob.sel { background: var(--accent); color: #fff; }
+
+/* ===== ألوان نص الأوسمة غير المحددة (لون أساسي مميز لكل صف) ===== */
+/* الفروع - أزرق بنفسجي */
+.tl-wide-blue .ob { color: #4338ca; }
+.tl-wide-blue .ob:hover { background: #eef2ff; color: #3730a3; }
+.tl-wide-blue .ob.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* نوع المكالمة - رمادي داكن */
+.tl-contrast-dark .ob { color: #1e293b; font-weight: 800; }
+.tl-contrast-dark .ob:hover { background: #f1f5f9; color: #0f172a; }
 .tl-contrast-dark .ob.sel { background: var(--text); color: #fff; }
+
+/* الموضوع - أحمر/تحذير */
+.tl-outline-red .ob { color: #dc2626; }
+.tl-outline-red .ob:hover { background: #fef2f2; color: #b91c1c; }
 .tl-outline-red .ob.sel { background: var(--red); color: #fff; }
+
+/* الأطفال - بنفسجي */
+.tl-pill-blue .ob { color: #7c3aed; }
+.tl-pill-blue .ob:hover { background: #f5f3ff; color: #6d28d9; }
 .tl-pill-blue .ob.sel { background: var(--purple); color: #fff; }
+
+/* المواقع - تيل */
+.tl-teal-text .ob { color: #0f766e; }
+.tl-teal-text .ob:hover { background: #f0fdfa; color: #115e59; }
 .tl-teal-text .ob.sel { background: #0f766e; color: #fff; }
+
+/* الجنسيات - أزرق */
+.tl-solid-blue .ob { color: #1d4ed8; }
+.tl-solid-blue .ob:hover { background: #eff6ff; color: #1e40af; }
 .tl-solid-blue .ob.sel { background: #2563eb; color: #fff; }
+
+/* نبرة العميل - نيلي */
+.tl-bold-indigo .ob { color: #3730a3; }
+.tl-bold-indigo .ob:hover { background: #eef2ff; color: #312e81; }
 .tl-bold-indigo .ob.sel { background: #4338ca; color: #fff; }
+
+/* المصادر - عنبر/برتقالي */
+.tl-wide-outline .ob { color: #b45309; }
+.tl-wide-outline .ob:hover { background: #fffbeb; color: #92400e; }
 .tl-wide-outline .ob.sel { background: var(--amber); color: #fff; }
+
+/* الجنس - خضر */
+.tl-solid-teal .ob { color: #047857; }
+.tl-solid-teal .ob:hover { background: #ecfdf5; color: #065f46; }
+.tl-solid-teal .ob.sel { background: var(--teal); color: #fff; }
+
+/* تسميات صفوف الأوسمة */
+.tline-label {
+  display: flex; align-items: center;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--tl2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
 
 .tline.dim { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
 
@@ -436,7 +476,7 @@ body {
 
 <header class="hdr">
   <div class="logo">
-    <span class="logo-txt">اي ام سبيشل</span>
+    <span class="logo-txt" id="logoTxt">اي ام سبيشل</span>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <div class="fb-status" id="fbStatus">
@@ -481,46 +521,72 @@ body {
     <div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <span id="fixedDateDisplay" style="font-size:14px;font-weight:800;color:var(--text);flex:1;min-width:60px;">—</span>
-        
         <button class="btn-p" style="position:relative; padding:8px 16px; font-size:12px; overflow:hidden;">
             <span>تعديل</span>
             <input type="date" id="defaultDatePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDefaultDatePick(this.value)" />
         </button>
-        
         <button id="resetDefaultDateBtn" onclick="resetDefaultDate()" class="btn-s" style="padding:8px 16px; font-size:12px; color:var(--teal); border-color:var(--teal);">إزالة ↺</button>
       </div>
     </div>
-    <div id="tagsPanel" style="display:none;margin-bottom:20px;">
+
+    <!-- ===== TAGS PANEL مع تسميات واضحة لكل صف ===== -->
+    <div id="tagsPanel" style="display:none;margin-bottom:20px;" data-step-controlled="true">
       <div class="trow">
+        <!-- الفرع -->
+        <div class="tline-label" style="color:#4338ca; border-right: 3px solid #4338ca;">🏢 الفرع</div>
         <div class="tline tl-wide-blue" id="branchGroup"></div>
+        <!-- نوع المكالمة -->
+        <div class="tline-label" style="color:#1e293b; border-right: 3px solid #1e293b;">📞 نوع المكالمة</div>
         <div class="tline tl-contrast-dark">
           <button class="ob" data-group="ctype" data-val="استفسار" onclick="selectOpt(this,'ctype')">استفسار</button>
           <button class="ob" data-group="ctype" data-val="طلب" onclick="selectOpt(this,'ctype')">طلب</button>
           <button class="ob" data-group="ctype" data-val="شكوى" onclick="selectOpt(this,'ctype')">شكوى</button>
         </div>
+        <!-- الموضوع -->
+        <div class="tline-label" style="color:#dc2626; border-right: 3px solid #dc2626;">📋 الموضوع</div>
         <div class="tline tl-outline-red" id="topicGroup"></div>
+        <!-- عدد الأطفال -->
+        <div class="tline-label" style="color:#7c3aed; border-right: 3px solid #7c3aed;">👶 عدد الأطفال</div>
         <div class="tline tl-pill-blue" id="tl-child"><div id="childGroup" style="display:contents"></div></div>
+        <!-- الموقع -->
+        <div class="tline-label" id="tl-loc-label" style="color:#0f766e; border-right: 3px solid #0f766e;">📍 موقع العميل</div>
         <div class="tline tl-teal-text" id="tl-loc"><div id="locGroup" style="display:contents"></div></div>
+        <!-- الجنسية -->
+        <div class="tline-label" style="color:#1d4ed8; border-right: 3px solid #1d4ed8;">🌍 الجنسية (اللكنة)</div>
         <div class="tline tl-solid-blue" id="natGroup"></div>
+        <!-- نبرة العميل -->
+        <div class="tline-label" style="color:#3730a3; border-right: 3px solid #3730a3;">🎭 نبرة العميل</div>
         <div class="tline tl-bold-indigo" id="emoGroup"></div>
+        <!-- المصدر -->
+        <div class="tline-label" id="tl-src-label" style="color:#b45309; border-right: 3px solid #b45309;">📡 مصدر التواصل</div>
         <div class="tline tl-wide-outline" id="tl-src"><div id="srcGroup" style="display:contents"></div></div>
+        <!-- الجنس -->
+        <div class="tline-label" style="color:#047857; border-right: 3px solid #047857;">👤 الجنس</div>
         <div class="tline tl-solid-teal">
           <button class="ob" data-group="gender" data-val="ذكر" onclick="selectOpt(this,'gender')">ذكر</button>
           <button class="ob" data-group="gender" data-val="أنثى" onclick="selectOpt(this,'gender')">أنثى</button>
         </div>
       </div>
-      <div class="cond" id="condComp" style="margin-top:12px;"><input type="text" class="fi" id="compNo" placeholder="رقم الشكوى..." /></div>
-      <div class="cond" id="condReq" style="margin-top:12px;"><input type="text" class="fi" id="reqNo" placeholder="رقم الطلب..." /></div>
+      <div class="cond" id="condComp" style="margin-top:12px;display:none;"><input type="text" class="fi" id="compNo" placeholder="رقم الشكوى..." /></div>
+      <div class="cond" id="condReq" style="margin-top:12px;display:none;"><input type="text" class="fi" id="reqNo" placeholder="رقم الطلب..." /></div>
     </div>
-    <div class="fg">
+
+    <div class="fg" id="step-phone-section">
       <input type="tel" inputmode="numeric" class="fi" id="phone" placeholder="05XXXXXXXX" maxlength="10" oninput="onPhoneInput(this.value)" style="font-size:18px;font-weight:800;letter-spacing:1px;" />
     </div>
-    <div class="fg" style="margin-top:16px;">
+    <div class="fg" id="step-details-section" style="margin-top:16px; display:none;">
       <textarea class="fta" id="details" placeholder="ماذا قال العميل...؟"></textarea>
     </div>
     <div class="notice" id="custNotice" style="margin-top:12px; display:none; align-items:center; gap:10px; background:var(--al); border-radius:12px; padding:12px 16px; font-weight:700; color:var(--accent);">
       <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
       <span id="custNoticeText">عميل مسجل</span>
+    </div>
+    <!-- زر التالي -->
+    <div id="nextBtnWrap" style="margin-top:16px; display:flex; justify-content:flex-start;">
+      <button class="btn-p" id="nextStepBtn" onclick="goNextStep()" style="padding:10px 28px; font-size:14px; display:flex; align-items:center; gap:8px;">
+        التالي
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     </div>
   </div>
 </div>
@@ -533,7 +599,6 @@ body {
     </div>
     
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:15px;">
-      
       <div class="dropdown">
         <button class="dropbtn">عرض ▾</button>
         <div class="dropdown-content">
@@ -568,7 +633,6 @@ body {
       </div>
       
       <input type="file" id="importFile" accept=".xlsx, .xls, .csv" style="display:none" onchange="handleImport(event)">
-
     </div>
   </div>
   
@@ -658,14 +722,12 @@ body {
 <div id="post-save-modal" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:20px;">
   <div style="background:var(--white); border-radius:24px; padding:24px; width:100%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; border-bottom: 2px solid var(--al); padding-bottom: 12px;">
-       <!-- WhatsApp SVG Icon -->
        <svg width="28" height="28" viewBox="0 0 24 24" fill="#25D366" xmlns="http://www.w3.org/2000/svg">
          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
        </svg>
        <h3 style="font-family:'Tajawal', sans-serif; font-size:18px; font-weight:800; color:var(--text);">شاعر واتساب — <span id="ps-type" style="color:#25D366;"></span></h3>
      </div>
      <div id="ps-summary" style="margin-bottom:16px; font-size:13px; color:var(--text); line-height:1.8; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;"></div>
-
      <div style="margin-bottom:16px;">
         <label style="font-weight:bold; font-size:13px; color:var(--text);">أسماء الأطفال (بحد أقصى 10):</label>
         <div id="ps-children-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
@@ -673,7 +735,6 @@ body {
         </div>
         <button class="btn-s" style="margin-top:8px; padding:6px 12px; font-size:12px; border-radius:8px;" onclick="addPSChildInput()">+ إضافة طفل</button>
      </div>
-
      <div style="display:flex; flex-wrap:wrap; gap:8px; border-top:1px solid var(--border); padding-top:16px;">
         <button onclick="psNotifyAdmin()" style="flex:1; color:var(--accent); border:1px solid var(--al); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer; font-family:'Cairo';">الإدارة</button>
         <button onclick="psNotifyBranch()" style="flex:1; color:var(--amber); border:1px solid var(--ambl); padding:8px; border-radius:8px; background:var(--white); font-weight:bold; cursor:pointer; font-family:'Cairo';">الفرع</button>
@@ -683,7 +744,6 @@ body {
         <button onclick="psRedirect1()" style="flex:1; color:#fff; background:var(--accent); border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-family:'Cairo';">توجيه (تطمن)</button>
         <button onclick="psRedirect2()" style="flex:1; color:#fff; background:var(--teal); border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-family:'Cairo';">توجيه (تطمن + جوال)</button>
      </div>
-
      <button class="btn-s" style="width:100%; margin-top:16px; padding:10px; border-radius:12px; cursor:pointer;" onclick="document.getElementById('post-save-modal').style.display='none'">إغلاق</button>
   </div>
 </div>
@@ -691,67 +751,63 @@ body {
 <script>
 Chart.defaults.font.family = 'Cairo';
 
-// ===== FIREBASE LAYER — نقطة دخول واحدة لكل عمليات Firestore =====
+// ===== FIREBASE LAYER =====
 const FB = {
   ready: () => !!window._firestoreReady,
 
-  // حفظ سجل واحد
+  // ===== حفظ فردي (يُستخدم للإضافة والتعديل) =====
   async save(rec) {
     if (!FB.ready()) { OfflineQ.add('save', rec); return; }
     const data = { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) };
     try {
-      await window._fsSetDoc(window._fsDoc(window._fsCollection('calls'), rec.seq), data);
+      const col = window._fsCollection('calls');
+      const ref = window._fsDoc(col, rec.seq);
+      await window._fsSetDoc(ref, data);
     } catch(e) {
-      console.warn('FB.save failed:', e.message);
+      console.warn('FB.save failed, queuing:', e.message);
       OfflineQ.add('save', rec);
     }
   },
 
-  // حفظ دفعة (batch) — للاستيراد السريع
-  async saveBatch(recs) {
-    if (!FB.ready() || !navigator.onLine) {
-      recs.forEach(r => OfflineQ.add('save', r));
-      return 0;
-    }
-    const CHUNK = 400; // Firestore يسمح 500 عملية/batch
-    let saved = 0;
-    for (let i = 0; i < recs.length; i += CHUNK) {
-      const chunk = recs.slice(i, i + CHUNK);
-      try {
-        const batch = window._fsWriteBatch();
-        chunk.forEach(rec => {
-          const data = { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) };
-          const ref = window._fsDoc(window._fsCollection('calls'), rec.seq);
-          batch.set(ref, data);
-        });
-        await batch.commit();
-        saved += chunk.length;
-      } catch(e) {
-        console.warn('FB.saveBatch chunk failed:', e.message);
-        chunk.forEach(r => OfflineQ.add('save', r));
-      }
-    }
-    return saved;
-  },
-
-  // حذف سجل
+  // ===== حذف فردي =====
   async remove(seq) {
     if (!FB.ready()) { OfflineQ.add('delete', { seq }); return; }
     try {
-      await window._fsDeleteDoc(window._fsDoc(window._fsCollection('calls'), seq));
+      const col = window._fsCollection('calls');
+      const ref = window._fsDoc(col, seq);
+      await window._fsDeleteDoc(ref);
     } catch(e) {
-      console.warn('FB.remove failed:', e.message);
+      console.warn('FB.remove failed, queuing:', e.message);
       OfflineQ.add('delete', { seq });
     }
   },
 
-  // قراءة كل السجلات مرة واحدة
+  // ===== جلب كل البيانات — أولاً من الكاش ثم السيرفر إذا تغير الـ hash =====
   async getAll() {
     if (!FB.ready()) return null;
     try {
-      const snap = await window._fsGetDocs(window._fsCollection('calls'));
+      const col = window._fsCollection('calls');
+
+      // 1. حاول الكاش أولاً (لا تكلفة)
+      let snap = null;
+      try {
+        snap = await window._fsGetDocsFromCache(col);
+        console.log(`Loaded ${snap.size} docs from cache`);
+      } catch(cacheErr) {
+        // الكاش فارغ أو غير متاح
+      }
+
+      // 2. إذا الكاش فارغ أو لم يتحمّل → اجلب من السيرفر
+      if (!snap || snap.empty) {
+        snap = await window._fsGetDocsFromServer(col);
+        console.log(`Fetched ${snap.size} docs from server`);
+      }
+
       const results = [];
-      snap.forEach(d => { const data = d.data(); results.push({ ...data, dt: new Date(data.dt) }); });
+      snap.forEach(d => {
+        const data = d.data();
+        results.push({ ...data, dt: new Date(data.dt) });
+      });
       return results;
     } catch(e) {
       console.warn('FB.getAll failed:', e.message);
@@ -760,55 +816,107 @@ const FB = {
     }
   },
 
-  // مزامنة لحظية — يُفعَّل مرة واحدة عند بدء التطبيق
-  _unsubscribe: null,
-  startRealtime() {
-    if (!FB.ready() || FB._unsubscribe) return;
-    if (!window._startRealtimeSync) return;
-    // ربط callbacks الاستقبال
-    window._onFBRecord = (rec) => {
-      // تجاهل التغييرات التي صدرت من هذا الجهاز نفسه (تحاشياً للتكرار)
-      if (_localWriteSeqs.has(rec.seq)) { _localWriteSeqs.delete(rec.seq); return; }
-      const idx = calls.findIndex(c => c.seq === rec.seq);
-      if (idx >= 0) { calls[idx] = rec; }
-      else { calls.unshift(rec); calls.sort((a, b) => b.dt - a.dt); }
-      saveCallDB(rec).catch(() => {});
-      renderFilteredLog(); updateBadge();
-    };
-    window._onFBDelete = (seq) => {
-      calls = calls.filter(c => c.seq !== seq);
-      renderFilteredLog(); updateBadge();
-    };
-    FB._unsubscribe = window._startRealtimeSync();
+  // ===== مزامنة كاملة من السيرفر (تُستخدم عند العودة للاتصال) =====
+  async getAllFromServer() {
+    if (!FB.ready()) return null;
+    try {
+      const col = window._fsCollection('calls');
+      const snap = await window._fsGetDocsFromServer(col);
+      const results = [];
+      snap.forEach(d => {
+        const data = d.data();
+        results.push({ ...data, dt: new Date(data.dt) });
+      });
+      return results;
+    } catch(e) {
+      console.warn('FB.getAllFromServer failed:', e.message);
+      return null;
+    }
   },
 
-  stopRealtime() {
-    if (FB._unsubscribe) { FB._unsubscribe(); FB._unsubscribe = null; }
+  // ===== مستمع فوري — يُحدِّث البيانات عند أي تغيير من أي مستخدم =====
+  startListener(onUpdate) {
+    if (!FB.ready() || !window._fsOnSnapshot) return null;
+    try {
+      const col = window._fsCollection('calls');
+      const unsub = window._fsOnSnapshot(col, (snap) => {
+        const results = [];
+        snap.forEach(d => {
+          const data = d.data();
+          results.push({ ...data, dt: new Date(data.dt) });
+        });
+        onUpdate(results);
+      }, (err) => {
+        console.warn('onSnapshot error:', err.message);
+        setFBStatus('error');
+      });
+      return unsub;
+    } catch(e) {
+      console.warn('startListener failed:', e.message);
+      return null;
+    }
+  },
+
+  // ===== حفظ دفعي (batch) — يُستخدم في الاستيراد لتوفير التكلفة =====
+  async batchSave(recs) {
+    if (!FB.ready() || !recs.length) return false;
+    try {
+      const CHUNK = 400; // Firestore يسمح 500 عملية في الـ batch
+      for (let i = 0; i < recs.length; i += CHUNK) {
+        const chunk = recs.slice(i, i + CHUNK);
+        const batch = window._fsWriteBatch();
+        const col = window._fsCollection('calls');
+        chunk.forEach(rec => {
+          const data = { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) };
+          const ref = window._fsDoc(col, rec.seq);
+          batch.set(ref, data);
+        });
+        await batch.commit();
+      }
+      return true;
+    } catch(e) {
+      console.warn('FB.batchSave failed:', e.message);
+      return false;
+    }
   }
 };
-
-// تتبع الكتابات المحلية لتجنب تكرار onSnapshot
-const _localWriteSeqs = new Set();
 
 function setFBStatus(state) {
   const dot = document.getElementById('fbDot');
   const txt = document.getElementById('fbStatusText');
+  const logo = document.getElementById('logoTxt');
   if (!dot || !txt) return;
   dot.className = 'fb-dot ' + (state === 'online' ? 'online' : state === 'error' ? 'error' : '');
   txt.textContent = state === 'online' ? 'متصل' : state === 'error' ? 'غير متصل' : 'Firebase';
+  if (logo) {
+    logo.style.color = state === 'online' ? 'var(--green)' : state === 'error' ? 'var(--red)' : 'var(--text)';
+  }
 }
 
 // ===== OFFLINE QUEUE =====
 const OfflineQ = {
   KEY: 'CS_OfflineQueue',
-  get()    { try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); } catch(e) { return []; } },
-  set(q)   { try { localStorage.setItem(this.KEY, JSON.stringify(q)); this.updateBadge(); } catch(e) {} },
+
+  get() {
+    try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); } catch(e) { return []; }
+  },
+
+  set(q) {
+    try {
+      localStorage.setItem(this.KEY, JSON.stringify(q));
+      this.updateBadge();
+    } catch(e) {}
+  },
 
   add(action, rec) {
     const q = this.get();
     const seq = rec ? rec.seq : null;
     const filtered = seq ? q.filter(i => !(i.seq === seq && i.action === action)) : q;
-    filtered.push({ action, seq, rec: rec ? { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) } : null, ts: Date.now() });
+    filtered.push({
+      action, seq,
+      rec: rec ? { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) } : null,
+      ts: Date.now()
+    });
     this.set(filtered);
   },
 
@@ -825,6 +933,7 @@ const OfflineQ = {
     if (!FB.ready() || !navigator.onLine) return;
     const q = this.get();
     if (!q.length) return;
+
     const remaining = [];
     let synced = 0;
     for (const item of q) {
@@ -832,13 +941,19 @@ const OfflineQ = {
         if (item.action === 'save' && item.rec) {
           const rec = { ...item.rec, dt: new Date(item.rec.dt) };
           const data = { ...rec, dt: rec.dt.toISOString() };
-          await window._fsSetDoc(window._fsDoc(window._fsCollection('calls'), rec.seq), data);
+          const col = window._fsCollection('calls');
+          const ref = window._fsDoc(col, rec.seq);
+          await window._fsSetDoc(ref, data);
           synced++;
         } else if (item.action === 'delete' && item.seq) {
-          await window._fsDeleteDoc(window._fsDoc(window._fsCollection('calls'), item.seq));
+          const col = window._fsCollection('calls');
+          const ref = window._fsDoc(col, item.seq);
+          await window._fsDeleteDoc(ref);
           synced++;
         }
-      } catch(e) { remaining.push(item); }
+      } catch(e) {
+        remaining.push(item);
+      }
     }
     this.set(remaining);
     if (synced > 0) toast(`✓ تمت مزامنة ${synced} سجل`, 'ok');
@@ -855,47 +970,58 @@ function initDB() {
     const req = indexedDB.open(DB_NAME, 1);
     req.onupgradeneeded = e => {
       const d = e.target.result;
-      if (!d.objectStoreNames.contains(STORE_NAME)) d.createObjectStore(STORE_NAME, { keyPath: 'seq' });
+      if (!d.objectStoreNames.contains(STORE_NAME)) {
+        d.createObjectStore(STORE_NAME, { keyPath: 'seq' });
+      }
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror  = e => reject(e.target.error);
+    req.onerror = e => reject(e.target.error);
   });
 }
 
 function getAllCallsDB() {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
-    const req = tx.objectStore(STORE_NAME).getAll();
-    req.onsuccess = () => resolve(req.result.map(c => ({ ...c, dt: new Date(c.dt) })));
-    req.onerror  = () => reject(req.error);
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.getAll();
+    req.onsuccess = () => {
+      resolve(req.result.map(c => ({ ...c, dt: new Date(c.dt) })));
+    };
+    req.onerror = () => reject(req.error);
   });
 }
 
 function saveCallDB(call) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (!db) { resolve(); return; }
-    const tx  = db.transaction(STORE_NAME, 'readwrite');
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
     const rec = { ...call, dt: call.dt instanceof Date ? call.dt.toISOString() : String(call.dt) };
-    const req = tx.objectStore(STORE_NAME).put(rec);
+    const req = store.put(rec);
     req.onsuccess = () => resolve();
-    req.onerror   = () => resolve(); // لا نوقف التطبيق بسبب خطأ محلي
+    req.onerror = () => reject(req.error);
   });
 }
 
-// ===== دوال الحفظ والحذف المركزية =====
-async function persistCall(rec) {
-  _localWriteSeqs.add(rec.seq); // علامة أن هذا التغيير من هنا
-  await saveCallDB(rec);
-  await FB.save(rec);
-}
-
-async function persistDelete(seq) {
-  await new Promise(res => {
+function deleteCallDB(seq) {
+  return new Promise((res) => {
     if (!db) { res(); return; }
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).delete(seq);
-    tx.oncomplete = res; tx.onerror = res;
+    tx.oncomplete = res;
+    tx.onerror = res;
   });
+}
+
+// ===== دالة الحفظ المركزية =====
+async function persistCall(rec) {
+  await saveCallDB(rec).catch(e => console.warn('IndexedDB save error:', e));
+  await FB.save(rec);
+}
+
+// ===== دالة الحذف المركزية =====
+async function persistDelete(seq) {
+  await deleteCallDB(seq);
   await FB.remove(seq);
 }
 
@@ -921,26 +1047,14 @@ let S = JSON.parse(localStorage.getItem('CS_Settings_v2')) || S_DEFAULT;
 function saveS() { localStorage.setItem('CS_Settings_v2', JSON.stringify(S)); }
 
 // ===== CHILD NAMES STORAGE =====
-// يتم حفظ أسماء الأطفال بالهيكل: { seq: [...names] }
 function getChildNames(seq) {
-  try {
-    const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}');
-    return all[seq] || [];
-  } catch(e) { return []; }
+  try { const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}'); return all[seq] || []; } catch(e) { return []; }
 }
 function saveChildNames(seq, names) {
-  try {
-    const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}');
-    all[seq] = names.filter(n => n && n.trim() !== '');
-    localStorage.setItem('CS_ChildNames', JSON.stringify(all));
-  } catch(e) {}
+  try { const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}'); all[seq] = names.filter(n => n && n.trim() !== ''); localStorage.setItem('CS_ChildNames', JSON.stringify(all)); } catch(e) {}
 }
 function deleteChildNames(seq) {
-  try {
-    const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}');
-    delete all[seq];
-    localStorage.setItem('CS_ChildNames', JSON.stringify(all));
-  } catch(e) {}
+  try { const all = JSON.parse(localStorage.getItem('CS_ChildNames') || '{}'); delete all[seq]; localStorage.setItem('CS_ChildNames', JSON.stringify(all)); } catch(e) {}
 }
 
 const CHILD_LABELS_DEF = {'طفل':'1','طفلين':'2','ثلاثة':'3','أربعة':'4','خمسة':'5','أكثر':'6+'};
@@ -952,6 +1066,7 @@ const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','
 let calls = [];
 let editSeq = null;
 let callDT = null;
+let formStep = 1; // خطوات النموذج: 1=الرقم، 2=التفاصيل، 3=الأوسمة
 const sel = {gender:'',nat:'',branch:'',loc:'',src:'',topics:[],ctype:'',child:'',emo:''};
 
 // ===== TIME/DATE =====
@@ -1004,15 +1119,21 @@ function renderChildren(){
   }).join('');
 }
 function renderAllGroups(){
-  rbg('natGroup', S.nat, 'nat', ''); rbg('branchGroup', S.branches, 'branch', 'a'); rbg('locGroup', S.locs, 'loc', 'p'); rbg('srcGroup', S.srcs, 'src', ''); rbg('emoGroup', S.emos, 'emo', 't');
+  rbg('natGroup', S.nat, 'nat', '');
+  rbg('branchGroup', S.branches, 'branch', 'a');
+  rbg('locGroup', S.locs, 'loc', 'p');
+  rbg('srcGroup', S.srcs, 'src', '');
+  rbg('emoGroup', S.emos, 'emo', 't');
   document.querySelectorAll('[data-group="ctype"]').forEach(b=>{ b.classList.toggle('sel', b.dataset.val===sel.ctype); });
   document.querySelectorAll('[data-group="gender"]').forEach(b=>{ b.classList.toggle('sel', b.dataset.val===sel.gender); });
-  renderTopicGroup(); renderChildren(); updateDimRows();
+  renderTopicGroup();
+  renderChildren();
+  updateDimRows();
 }
 function renderTopicGroup(){
   const el=document.getElementById('topicGroup'); if(!el) return;
   const topics=sel.ctype&&S.topicMap[sel.ctype]?S.topicMap[sel.ctype]:[];
-  if(!topics.length){ el.innerHTML='<span style="font-size:12px;color:var(--tl2);padding:6px 0;">اختر نوع المكالمة أولاً</span>'; return; }
+  if(!topics.length){ el.innerHTML='<span style="font-size:12px;color:var(--tl2);padding:10px 14px;display:block;">اختر نوع المكالمة أولاً</span>'; return; }
   el.innerHTML=topics.map(item=>{
     const isSel=sel.topics.includes(item);
     return `<button class="ob${isSel?' sel':''}" data-group="topic" data-val="${item}" onclick="selectOpt(this,'topic')">${item}</button>`;
@@ -1029,16 +1150,10 @@ function onPhoneInput(v){
       if(!sel.nat){ sel.nat=lat.nat; } if(!sel.gender){ sel.gender=lat.gender; }
       renderAllGroups();
       document.getElementById('custNotice').style.display='flex';
-      
       const isFemale = lat.gender === 'أنثى'; 
-      const verbMap = {
-        'استفسار': isFemale ? 'تستفسر' : 'يستفسر',
-        'شكوى': isFemale ? 'تشتكي' : 'يشتكي',
-        'طلب': isFemale ? 'تطلب' : 'يطلب'
-      };
+      const verbMap = { 'استفسار': isFemale ? 'تستفسر' : 'يستفسر', 'شكوى': isFemale ? 'تشتكي' : 'يشتكي', 'طلب': isFemale ? 'تطلب' : 'يطلب' };
       const verb = verbMap[lat.ctype] || (lat.ctype || '');
       const topicStr = lat.topic ? ` ${lat.topic}` : '';
-      
       document.getElementById('custNotice').innerHTML = `
         <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
         <span style="flex:1; line-height: 1.5; font-size: 13px;">
@@ -1056,10 +1171,7 @@ function viewCustomerHistory(phone) {
   if (logTabBtn) switchTab('log', logTabBtn);
   if (!groupMode) toggleGroupMode();
   const searchInput = document.getElementById('logSearch');
-  if (searchInput) {
-    searchInput.value = phone;
-    renderFilteredLog();
-  }
+  if (searchInput) { searchInput.value = phone; renderFilteredLog(); }
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
@@ -1087,31 +1199,63 @@ function updateSeqLabel(){ const lbl=document.getElementById('seqLabel'); if(lbl
 
 function updateDTBtns(){ 
   if(!callDT) return; 
-  const dbtn=document.getElementById('dateBtnText'); 
-  const tb=document.getElementById('timeBtnText'); 
+  const dbtn=document.getElementById('dateBtnText'); const tb=document.getElementById('timeBtnText'); 
   if(dbtn) dbtn.textContent=fmtDate(callDT); 
   if(tb) tb.textContent=fmtTime(callDT); 
-  const dp=document.getElementById('datePicker'); 
-  const tp=document.getElementById('timePicker'); 
+  const dp=document.getElementById('datePicker'); const tp=document.getElementById('timePicker'); 
   if(dp) dp.value=callDT.toLocaleDateString('en-CA'); 
   if(tp){ const hh=String(callDT.getHours()).padStart(2,'0'),mm=String(callDT.getMinutes()).padStart(2,'0'); tp.value=hh+':'+mm; } 
 }
 
-// ===== FIX: تحديث التاريخ والوقت فعلياً على callDT =====
 function onDatePick(v){ 
-  if(!v) return; 
-  if(!callDT) callDT=new Date(); 
-  const [y,m,d]=v.split('-').map(Number); 
-  callDT.setFullYear(y,m-1,d); 
-  updateDTBtns(); 
-  updateSeqLabel();
+  if(!v) return; if(!callDT) callDT=new Date(); 
+  const [y,m,d]=v.split('-').map(Number); callDT.setFullYear(y,m-1,d); 
+  updateDTBtns(); updateSeqLabel();
 }
 function onTimePick(v){ 
-  if(!v) return; 
-  if(!callDT) callDT=new Date(); 
-  const [h,m]=v.split(':').map(Number); 
-  callDT.setHours(h,m,0,0); 
+  if(!v) return; if(!callDT) callDT=new Date(); 
+  const [h,m]=v.split(':').map(Number); callDT.setHours(h,m,0,0); 
   updateDTBtns(); 
+}
+
+// ===== FORM STEPS (التالي) =====
+function goNextStep() {
+  const phone = document.getElementById('phone').value.trim();
+  if (formStep === 1) {
+    if (editSeq === null && !isSaudiPhone(phone)) return toast('أدخل رقم جوال سعودي صحيح (05XXXXXXXX)', 'err');
+    if (editSeq !== null && phone === '') return toast('الرجاء إدخال رقم الجوال', 'err');
+    formStep = 2;
+    document.getElementById('step-details-section').style.display = 'block';
+    document.getElementById('details').focus();
+    document.getElementById('nextStepBtn').innerHTML = 'التالي <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+    return;
+  }
+  if (formStep === 2) {
+    formStep = 3;
+    // فتح لوحة الأوسمة
+    const tagsPanel = document.getElementById('tagsPanel');
+    tagsPanel.style.display = 'block';
+    tagsPanelOpen = true;
+    updateTagsBtnIndicator();
+    // تحويل زر التالي إلى حفظ
+    const btn = document.getElementById('nextStepBtn');
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ';
+    btn.onclick = submitCall;
+    // تمرير للأوسمة
+    tagsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+}
+
+function resetFormSteps() {
+  formStep = 1;
+  document.getElementById('step-details-section').style.display = 'none';
+  const btn = document.getElementById('nextStepBtn');
+  if (btn) {
+    btn.innerHTML = 'التالي <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+    btn.onclick = goNextStep;
+  }
+  document.getElementById('nextBtnWrap').style.display = 'flex';
 }
 
 // ===== AUTO SAVE =====
@@ -1119,10 +1263,7 @@ function checkAutoSave(isGenderTrigger = false) {
   const phone = document.getElementById('phone').value.trim();
   if (!isSaudiPhone(phone) || editSeq !== null) return;
   if (!sel.ctype || sel.topics.length === 0) return;
-  if (isGenderTrigger) {
-      if (sel.gender) { submitCall(); }
-      return;
-  }
+  if (isGenderTrigger) { if (sel.gender) { submitCall(); } return; }
 }
 
 function selectOpt(btn, grp){
@@ -1142,30 +1283,20 @@ function selectOpt(btn, grp){
   touchDT(); updateTagsBtnIndicator(); checkAutoSave(grp === 'gender');
 }
 function updateCond(){ document.getElementById('condComp').style.display=sel.ctype==='شكوى'?'block':'none'; document.getElementById('condReq').style.display=sel.ctype==='طلب'?'block':'none'; updateDimRows(); }
-function updateDimRows(){ const isComp=sel.ctype==='شكوى'; ['tl-child','tl-loc','tl-src'].forEach(id=>{ const el=document.getElementById(id); if(!el) return; isComp ? el.classList.add('dim') : el.classList.remove('dim'); }); }
+function updateDimRows(){ const isComp=sel.ctype==='شكوى'; ['tl-child','tl-loc','tl-src','tl-loc-label','tl-src-label'].forEach(id=>{ const el=document.getElementById(id); if(!el) return; isComp ? el.classList.add('dim') : el.classList.remove('dim'); }); }
 
 // ===== SUBMIT & DELETE =====
 async function submitCall(){
   const phone=document.getElementById('phone').value.trim();
-  
   if (editSeq === null && !isSaudiPhone(phone)) return toast('أدخل رقم جوال سعودي صحيح (05XXXXXXXX)','err');
   if (editSeq !== null && phone === '') return toast('الرجاء إدخال رقم الجوال','err');
-  if(!sel.ctype)   return toast('الرجاء اختيار نوع المكالمة','err');
+  if(!sel.ctype) return toast('الرجاء اختيار نوع المكالمة','err');
   if(sel.topics.length === 0) return toast('الرجاء اختيار موضوع المكالمة','err');
   if(!callDT) callDT=new Date();
 
-  // عند التعديل: نحافظ على التسلسل والتاريخ الأصلي لكن نحدّث الوقت/التاريخ المُعدَّل
-  let recDT;
-  if(editSeq !== null) {
-    // استخدام callDT الجديد (الذي يحمل التاريخ والوقت المُعدَّلَين)
-    recDT = callDT;
-  } else {
-    recDT = callDT;
-  }
-
   const rec={
     seq:   editSeq!==null ? editSeq : nextSeq(callDT||new Date()),
-    dt:    recDT,
+    dt:    callDT,
     phone, gender:sel.gender, nat:sel.nat, branch:sel.branch, loc:sel.loc,
     src:sel.src, topic:sel.topics.join('، '), ctype:sel.ctype,
     compNo:sel.ctype==='شكوى'?(document.getElementById('compNo').value.trim()||''):'',
@@ -1174,10 +1305,7 @@ async function submitCall(){
   };
 
   try {
-    await saveCallDB(rec);
-    // حفظ في Firestore أيضاً
-    await saveCallFirestore(rec);
-
+    await persistCall(rec);
     if(editSeq!==null){
       const idx=calls.findIndex(c=>c.seq===editSeq);
       if(idx!==-1) calls[idx]=rec;
@@ -1203,37 +1331,33 @@ async function submitCall(){
 async function deleteCall(seq) {
   if(!confirm('هل أنت متأكد من حذف هذه المكالمة تماماً؟')) return;
   try {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    store.delete(seq);
-    tx.oncomplete = async () => {
-      // حذف من Firestore أيضاً
-      await deleteCallFirestore(seq);
-      // حذف أسماء الأطفال المحفوظة
-      deleteChildNames(seq);
-      calls = calls.filter(c => c.seq !== seq);
-      renderFilteredLog();
-      updateBadge();
-      if(document.getElementById('tab-analytics').classList.contains('active')){
-         updateAnalytics();
-      }
-      toast('تم الحذف بنجاح', 'ok');
-    };
+    await persistDelete(seq);
+    deleteChildNames(seq);
+    calls = calls.filter(c => c.seq !== seq);
+    renderFilteredLog(); updateBadge();
+    if(document.getElementById('tab-analytics').classList.contains('active')){ updateAnalytics(); }
+    toast('تم الحذف بنجاح', 'ok');
   } catch(err) {
-    console.error(err);
-    toast('حدث خطأ أثناء الحذف', 'err');
+    console.error(err); toast('حدث خطأ أثناء الحذف', 'err');
   }
 }
 
 function clearForm(){
   ['phone','compNo','reqNo','details'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('custNotice').style.display='none'; document.getElementById('condComp').style.display='none'; document.getElementById('condReq').style.display='none';
+  document.getElementById('custNotice').style.display='none';
+  document.getElementById('condComp').style.display='none';
+  document.getElementById('condReq').style.display='none';
   Object.keys(sel).forEach(k=>{ sel[k]=k==='topics'?[]:'' }); callDT=null;
   if(defaultDate){ touchDT(); } else { updateSeqLabel(); updateDTBtns(); document.getElementById('dateBtnText').textContent='التاريخ'; document.getElementById('timeBtnText').textContent='الوقت'; }
-  renderAllGroups(); document.querySelectorAll('[data-group="gender"],[data-group="ctype"],[data-group="child"]').forEach(b=>b.classList.remove('sel')); updateTagsBtnIndicator();
+  renderAllGroups();
+  document.querySelectorAll('[data-group="gender"],[data-group="ctype"],[data-group="child"]').forEach(b=>b.classList.remove('sel'));
+  updateTagsBtnIndicator();
+  // إعادة ضبط الخطوات
+  resetFormSteps();
+  // إخفاء لوحة الأوسمة
+  if (tagsPanelOpen) { toggleTagsPanel(); }
 }
 
-// ===== EDIT: تحديث التاريخ والوقت عند فتح نموذج التعديل =====
 function editCall(seq){
   const c=calls.find(x=>x.seq===seq); if(!c) return;
   editSeq=seq;
@@ -1241,114 +1365,85 @@ function editCall(seq){
   document.getElementById('details').value=c.notes; 
   document.getElementById('compNo').value=c.compNo||''; 
   document.getElementById('reqNo').value=c.reqNo||'';
-  
-
-  // ===== FIX: تحميل التاريخ والوقت الفعلي للمكالمة =====
   callDT = new Date(c.dt);
-  updateSeqLabel(); 
-  updateDTBtns();  // هذا يملأ datePicker و timePicker بالقيم الصحيحة
-  
+  updateSeqLabel(); updateDTBtns();
   sel.gender=c.gender; sel.nat=c.nat; sel.branch=c.branch; sel.loc=c.loc; sel.src=c.src||''; sel.topics=c.topic?c.topic.split('، ').filter(Boolean):[]; sel.ctype=c.ctype; sel.child=c.child||''; sel.emo=c.emo||'';
   renderAllGroups(); updateCond();
-  document.getElementById('submitBtn').innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'; document.getElementById('custNotice').style.display='none';
+  document.getElementById('submitBtn').innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  document.getElementById('custNotice').style.display='none';
+  // في وضع التعديل: أظهر كل الأقسام مباشرةً وأخفِ زر التالي
+  formStep = 3;
+  document.getElementById('step-details-section').style.display = 'block';
+  document.getElementById('nextBtnWrap').style.display = 'none';
+  // فتح الأوسمة
+  if (!tagsPanelOpen) { toggleTagsPanel(); }
   const formBtn=document.querySelector('[data-tab="form"]'); switchTab('form',formBtn); window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ===== POST SAVE MODAL (شاعر واتساب) =====
+// ===== POST SAVE MODAL =====
 let psCallRecord = null;
 function showPostSaveModalBySeq(seq) {
-    const c = calls.find(x => x.seq === seq);
-    if(c) showPostSaveModal(c);
+  const c = calls.find(x => x.seq === seq);
+  if(c) showPostSaveModal(c);
 }
-
 function showPostSaveModal(rec) {
-    psCallRecord = rec;
-    document.getElementById('ps-type').textContent = rec.ctype;
-    document.getElementById('ps-summary').textContent = genSummary(rec);
-    
-    // تحميل أسماء الأطفال المحفوظة مسبقاً لهذه المكالمة
-    const savedNames = getChildNames(rec.seq);
-    const container = document.getElementById('ps-children-container');
-    if (savedNames.length > 0) {
-      container.innerHTML = savedNames.map((name, i) => 
-        `<input type="text" class="fi child-name-input" placeholder="اسم الطفل ${i+1}" value="${name}" />`
-      ).join('');
-    } else {
-      container.innerHTML = '<input type="text" class="fi child-name-input" placeholder="اسم الطفل 1" />';
-    }
-    
-    document.getElementById('post-save-modal').style.display = 'flex';
+  psCallRecord = rec;
+  document.getElementById('ps-type').textContent = rec.ctype;
+  document.getElementById('ps-summary').textContent = genSummary(rec);
+  const savedNames = getChildNames(rec.seq);
+  const container = document.getElementById('ps-children-container');
+  if (savedNames.length > 0) {
+    container.innerHTML = savedNames.map((name, i) => `<input type="text" class="fi child-name-input" placeholder="اسم الطفل ${i+1}" value="${name}" />`).join('');
+  } else {
+    container.innerHTML = '<input type="text" class="fi child-name-input" placeholder="اسم الطفل 1" />';
+  }
+  document.getElementById('post-save-modal').style.display = 'flex';
 }
-
 function addPSChildInput() {
-    const container = document.getElementById('ps-children-container');
-    const inputs = container.querySelectorAll('input');
-    if(inputs.length >= 10) { toast('الحد الأقصى 10 أطفال', 'err'); return; }
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'fi child-name-input';
-    input.placeholder = `اسم الطفل ${inputs.length + 1}`;
-    container.appendChild(input);
+  const container = document.getElementById('ps-children-container');
+  const inputs = container.querySelectorAll('input');
+  if(inputs.length >= 10) { toast('الحد الأقصى 10 أطفال', 'err'); return; }
+  const input = document.createElement('input');
+  input.type = 'text'; input.className = 'fi child-name-input'; input.placeholder = `اسم الطفل ${inputs.length + 1}`;
+  container.appendChild(input);
 }
-
 function getPSChildNamesList() {
-    const inputs = document.querySelectorAll('.child-name-input');
-    return Array.from(inputs).map(inp => inp.value.trim()).filter(n => n !== '');
+  const inputs = document.querySelectorAll('.child-name-input');
+  return Array.from(inputs).map(inp => inp.value.trim()).filter(n => n !== '');
 }
-
-// حفظ أسماء الأطفال عند الضغط على أي زر من أزرار المودال
 function savePSChildNamesIfAny() {
   if (!psCallRecord) return;
   const names = getPSChildNamesList();
-  if (names.length > 0) {
-    saveChildNames(psCallRecord.seq, names);
-    // إعادة رسم السجل لتحديث التفاصيل
-    renderFilteredLog();
-  }
+  if (names.length > 0) { saveChildNames(psCallRecord.seq, names); renderFilteredLog(); }
 }
-
 function psNotifyAdmin() { savePSChildNamesIfAny(); if(psCallRecord) notifyAdmin(psCallRecord.seq); }
 function psNotifyBranch() { savePSChildNamesIfAny(); if(psCallRecord) notifyBranch(psCallRecord.seq); }
 function psSendFollowUp() { savePSChildNamesIfAny(); if(psCallRecord) sendFollowUp(psCallRecord.seq); }
-
 function psRedirect1() {
-    const names = getPSChildNamesList();
-    if(names.length === 0) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
-    if(!psCallRecord.branch || !S.branchPhones[psCallRecord.branch]) { toast('لم يتم إضافة رقم هذا الفرع', 'err'); return; }
-    savePSChildNamesIfAny();
-    
-    const clientTitle = (psCallRecord.gender === 'أنثى') ? 'أم' : 'أبو';
-    const firstChild = names[0];
-    const childWord = names.length > 1 ? 'أطفالكم' : 'طفلكم';
-    const namesStr = names.join(' و ');
-
-    let custPhone = psCallRecord.phone.replace(/\D/g,'');
-    if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
-    
-    const custMsg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}`;
-    const branchClickLink = `https://wa.me/${custPhone}?text=${encodeURIComponent(custMsg)}`;
-    const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الضغط على الرابط التالي:\n\n${branchClickLink}`;
-    waLink(S.branchPhones[psCallRecord.branch], msgToBranch);
+  const names = getPSChildNamesList();
+  if(names.length === 0) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
+  if(!psCallRecord.branch || !S.branchPhones[psCallRecord.branch]) { toast('لم يتم إضافة رقم هذا الفرع', 'err'); return; }
+  savePSChildNamesIfAny();
+  const clientTitle = (psCallRecord.gender === 'أنثى') ? 'أم' : 'أبو';
+  const firstChild = names[0]; const childWord = names.length > 1 ? 'أطفالكم' : 'طفلكم'; const namesStr = names.join(' و ');
+  let custPhone = psCallRecord.phone.replace(/\D/g,''); if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
+  const custMsg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}`;
+  const branchClickLink = `https://wa.me/${custPhone}?text=${encodeURIComponent(custMsg)}`;
+  const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الضغط على الرابط التالي:\n\n${branchClickLink}`;
+  waLink(S.branchPhones[psCallRecord.branch], msgToBranch);
 }
-
 function psRedirect2() {
-    const names = getPSChildNamesList();
-    if(names.length === 0) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
-    if(!psCallRecord.branch || !S.branchPhones[psCallRecord.branch]) { toast('لم يتم إضافة رقم هذا الفرع', 'err'); return; }
-    savePSChildNamesIfAny();
-    
-    const clientTitle = (psCallRecord.gender === 'أنثى') ? 'أم' : 'أبو';
-    const firstChild = names[0];
-    const childWord = names.length > 1 ? 'أطفالكم' : 'طفلكم';
-    const namesStr = names.join(' و ');
-
-    let custPhone = psCallRecord.phone.replace(/\D/g,'');
-    if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
-    
-    const custMsg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}`;
-    const branchClickLink = `https://wa.me/${custPhone}?text=${encodeURIComponent(custMsg)}`;
-    const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الرابط التالي، ونرجو من العاملة الانتباه للجوال:\n\n${branchClickLink}`;
-    waLink(S.branchPhones[psCallRecord.branch], msgToBranch);
+  const names = getPSChildNamesList();
+  if(names.length === 0) { toast('الرجاء إدخال اسم طفل واحد على الأقل', 'err'); return; }
+  if(!psCallRecord.branch || !S.branchPhones[psCallRecord.branch]) { toast('لم يتم إضافة رقم هذا الفرع', 'err'); return; }
+  savePSChildNamesIfAny();
+  const clientTitle = (psCallRecord.gender === 'أنثى') ? 'أم' : 'أبو';
+  const firstChild = names[0]; const childWord = names.length > 1 ? 'أطفالكم' : 'طفلكم'; const namesStr = names.join(' و ');
+  let custPhone = psCallRecord.phone.replace(/\D/g,''); if(custPhone.startsWith('0')) custPhone = '966' + custPhone.slice(1);
+  const custMsg = `السلام عليكم ${clientTitle} ${firstChild}، وصلنا طلبكم للإطمئنان على ${childWord} ${namesStr}`;
+  const branchClickLink = `https://wa.me/${custPhone}?text=${encodeURIComponent(custMsg)}`;
+  const msgToBranch = `السلام عليكم،\nيرجى التواصل مع العميل للإطمئنان عبر الرابط التالي، ونرجو من العاملة الانتباه للجوال:\n\n${branchClickLink}`;
+  waLink(S.branchPhones[psCallRecord.branch], msgToBranch);
 }
 
 // ===== LOG =====
@@ -1378,10 +1473,7 @@ function renderLog(subset){
     let currentDay = '';
     sorted.forEach(c=>{ 
       let dayStr = fmtDate(c.dt);
-      if (currentDay !== dayStr) {
-          currentDay = dayStr;
-          html += `<div style="font-family:'Tajawal', sans-serif; font-size:16px; font-weight:800; color:var(--accent); margin: 24px 0 12px 0; border-bottom: 2px solid var(--border); padding-bottom: 8px;">(${dayStr})</div>`;
-      }
+      if (currentDay !== dayStr) { currentDay = dayStr; html += `<div style="font-family:'Tajawal', sans-serif; font-size:16px; font-weight:800; color:var(--accent); margin: 24px 0 12px 0; border-bottom: 2px solid var(--border); padding-bottom: 8px;">(${dayStr})</div>`; }
       html+=callCard(c,false); 
     }); 
   }
@@ -1393,45 +1485,26 @@ function cardSummary(c){
   const topics=c.topic?c.topic.split('، ').filter(Boolean):[]; let topicPart=''; if(topics.length===1) topicPart=topics[0]; else if(topics.length>1) topicPart=topics.slice(0,-1).join(' و')+' و'+topics[topics.length-1];
   let s=verb; if(topicPart) s+=' '+topicPart; if(c.branch) s+=` في فرع ${c.branch}`; return s;
 }
-
-// دالة مساعدة لعرض معلومات الأطفال في التفاصيل
 function buildChildDisplay(c) {
-  const f = c.gender === 'أنثى';
-  const parentLabel = f ? 'أم' : 'أب';
-  const childCount = c.child || '';
-  const names = getChildNames(c.seq);
-  
+  const f = c.gender === 'أنثى'; const parentLabel = f ? 'أم' : 'أب';
+  const childCount = c.child || ''; const names = getChildNames(c.seq);
   if (!childCount) return '';
-  
   let display = `${parentLabel} ${childCount}`;
-  if (names.length > 0) {
-    display += ` وهم (${names.join(' و ')})`;
-  }
+  if (names.length > 0) { display += ` وهم (${names.join(' و ')})`; }
   return display;
 }
-
 function callCard(c, nested){
-  const sa=nested?'':' standalone'; 
-  const childDisplay = buildChildDisplay(c);
+  const sa=nested?'':' standalone'; const childDisplay = buildChildDisplay(c);
   const fields=[
-    {l:'تاريخ المكالمة',v:`(${fmtDate(c.dt)})`},
-    {l:'جوال العميل',v:c.phone},
-    {l:'الجنس',v:c.gender},
-    {l:'اللكنة',v:c.nat},
-    {l:'الفرع',v:c.branch},
-    {l:'الموقع',v:c.loc},
-    {l:'عدد الأطفال',v:childDisplay||c.child||'—'},
-    {l:'نبرة العميل',v:c.emo||'—'},
-    {l:'المصدر',v:c.src||'—'},
-    {l:'الموضوع',v:c.topic||'—'},
+    {l:'تاريخ المكالمة',v:`(${fmtDate(c.dt)})`},{l:'جوال العميل',v:c.phone},{l:'الجنس',v:c.gender},
+    {l:'اللكنة',v:c.nat},{l:'الفرع',v:c.branch},{l:'الموقع',v:c.loc},
+    {l:'عدد الأطفال',v:childDisplay||c.child||'—'},{l:'نبرة العميل',v:c.emo||'—'},
+    {l:'المصدر',v:c.src||'—'},{l:'الموضوع',v:c.topic||'—'},
     ...(c.compNo?[{l:'رقم الشكوى',v:c.compNo}]:[]),
     ...(c.reqNo?[{l:'رقم الطلب',v:c.reqNo}]:[])
   ];
   const seqCls=c.ctype==='شكوى'?'ct-complaint':c.ctype==='طلب'?'ct-request':'ct-inquiry';
-  
-  // WhatsApp SVG icon
   const waSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
-
   return `
   <div class="cc${sa}">
     <div class="cc-top" onclick="togCard('${c.seq}')">
@@ -1456,20 +1529,13 @@ function callCard(c, nested){
 function genSummary(c){
   const f=c.gender==='أنثى'; const g=(m,fm)=>f?fm:m; const parts=[];
   const childLabel={'طفل':'طفل واحد','طفلين':'طفلين','ثلاثة':'ثلاثة أطفال','أربعة':'أربعة أطفال','خمسة':'خمسة أطفال','أكثر':'أكثر من خمسة أطفال'};
-  
-  // عرض معلومات الأطفال مع الأسماء
   const childNames = getChildNames(c.seq);
   let childPart = '';
   if(c.child && childLabel[c.child]) {
     childPart = `${g('أب','أم')} لـ${childLabel[c.child]}`;
-    if(childNames.length > 0) {
-      childPart += ` وهم (${childNames.join(' و ')})`;
-    }
-  } else {
-    childPart = g('أب','أم');
-  }
+    if(childNames.length > 0) { childPart += ` وهم (${childNames.join(' و ')})`; }
+  } else { childPart = g('أب','أم'); }
   parts.push(childPart);
-  
   if(c.nat){ const natF = c.nat.endsWith('ي') ? c.nat+'ة' : c.nat; parts.push(`يظهر ${g('أنه','أنها')} ${g(c.nat, natF)}`); }
   const verb={'شكوى':g('يشتكي','تشتكي'),'استفسار':g('يستفسر عن','تستفسر عن'),'طلب':g('يطلب','تطلب')}[c.ctype]||c.ctype;
   let callPart=`${g('اتصل','اتصلت')} ${verb}`; if(c.topic) callPart+=` ${c.topic}`; if(c.branch) callPart+=` في ${c.branch}`; parts.push(callPart);
@@ -1478,17 +1544,9 @@ function genSummary(c){
   parts.push(`رقم ${g('العميل','العميلة')} ${c.phone}`);
   return parts.join('، ');
 }
-
 function copySumm(seq){ const box=document.getElementById('summ-'+seq); if(!box||!box.textContent) return; navigator.clipboard.writeText(box.textContent).then(()=>toast('تم نسخ النص','ok')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=box.textContent; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('تم نسخ النص','ok'); }); }
 function waLink(phone, msg){ let p=phone.replace(/\D/g,''); if(p.startsWith('0')) p='966'+p.slice(1); window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`,'_blank'); }
-
-function followUpText(c){ 
-  const f=c.gender==='أنثى'; 
-  const clientLabel=f?'أم':'أب'; 
-  const verb={'شكوى':f?'تشتكي':'يشتكي','استفسار':f?'تستفسر عن':'يستفسر عن','طلب':f?'تطلب':'يطلب'}[c.ctype]||c.ctype; 
-  return `*جزء خاص بالادارة يوضح تفاصيل الحالة ، قم بحذها* \n ${clientLabel}  ${verb} ${c.topic||c.ctype}  في فرع ${c.branch||'غير محدد'} ، ${c.notes||'لا يوجد'}`; 
-}
-
+function followUpText(c){ const f=c.gender==='أنثى'; const clientLabel=f?'أم':'أب'; const verb={'شكوى':f?'تشتكي':'يشتكي','استفسار':f?'تستفسر عن':'يستفسر عن','طلب':f?'تطلب':'يطلب'}[c.ctype]||c.ctype; return `*جزء خاص بالادارة يوضح تفاصيل الحالة ، قم بحذها* \n ${clientLabel}  ${verb} ${c.topic||c.ctype}  في فرع ${c.branch||'غير محدد'} ، ${c.notes||'لا يوجد'}`; }
 function sendFollowUp(seq){ const c=calls.find(x=>x.seq===seq); if(!c) return; waLink(c.phone, followUpText(c)); }
 function notifyBranch(seq){ const c=calls.find(x=>x.seq===seq); if(!c) return; const phone=S.branchPhones[c.branch]||''; if(!phone){ toast('لم يتم إضافة رقم هذا الفرع في الصيانة','err'); return; } waLink(phone, genSummary(c)); }
 function notifyAdmin(seq){ const c=calls.find(x=>x.seq===seq); if(!c) return; if(!S.adminPhone){ toast('لم يتم إضافة رقم الإدارة في الصيانة','err'); return; } let custPhone=c.phone.replace(/[^0-9]/g,''); if(custPhone.startsWith('0')) custPhone='966'+custPhone.slice(1); const custWaLink=`https://wa.me/${custPhone}?text=${encodeURIComponent(followUpText(c))}`; waLink(S.adminPhone, genSummary(c)+'\n\n---\n'+custWaLink); }
@@ -1507,7 +1565,7 @@ function toggleSummDetail(seq){
 function updateBadge(){ const b=document.getElementById('logBadge'); b.style.display='inline-block'; b.textContent=calls.length; }
 
 // ===== ANALYTICS =====
-let activeFilters={}; let logFilters={}; let analyticsTerms=[];
+let activeFilters={}; let analyticsTerms=[];
 function filteredCalls(){ const terms=analyticsTerms.map(t=>t.toLowerCase()); if(!terms.length) return calls; return calls.filter(c=>{ const fields=[c.phone,c.seq,c.ctype,c.gender,c.nat,c.branch,c.loc,c.src,c.topic,c.emo,c.child,c.notes,c.compNo,c.reqNo].map(v=>(v||'').toLowerCase()); return terms.every(t=>fields.some(f=>f.includes(t))); }); }
 function filteredLogCalls(){ const q=(document.getElementById('logSearch')||{}).value||''; const term=q.trim().toLowerCase(); let result=calls; if(term){ result=result.filter(c=>{ const fields=[c.phone,c.seq,c.ctype,c.gender,c.nat,c.branch,c.loc,c.src,c.topic,c.emo,c.child,c.notes,c.compNo,c.reqNo].map(v=>(v||'').toLowerCase()); return fields.some(f=>f.includes(term)); }); } return result; }
 function addAnalyticsTag(){ const inp=document.getElementById('analyticsSearch'); if(!inp) return; const v=inp.value.trim(); if(!v) return; if(!analyticsTerms.includes(v)) analyticsTerms.push(v); inp.value=''; activeFilters={_tags:analyticsTerms}; renderAnalyticsTags(); updateAnalytics(); inp.focus(); }
@@ -1516,26 +1574,17 @@ function renderAnalyticsTags(){ const row=document.getElementById('filterTagsRow
 function removeAnalyticsTag(term){ analyticsTerms=analyticsTerms.filter(t=>t!==term); activeFilters={_tags:analyticsTerms}; renderAnalyticsTags(); updateAnalytics(); }
 function clearFilters(){ activeFilters={}; analyticsTerms=[]; const inp=document.getElementById('analyticsSearch'); if(inp) inp.value=''; const row=document.getElementById('filterTagsRow'); if(row) row.innerHTML=''; updateAnalytics(); }
 function renderSuggestedTags() {
-  const container = document.getElementById('suggestedTagsRow');
-  if (!container) return;
-  const fc = filteredCalls();
-  const counts = {};
-  fc.forEach(c => {
-    const tags = [c.ctype, c.branch, c.loc, c.src, c.gender, c.nat, c.emo, c.child];
-    if (c.topic) tags.push(...c.topic.split('، '));
-    tags.filter(Boolean).forEach(tag => { if (!analyticsTerms.includes(tag)) { counts[tag] = (counts[tag] || 0) + 1; } });
-  });
+  const container = document.getElementById('suggestedTagsRow'); if (!container) return;
+  const fc = filteredCalls(); const counts = {};
+  fc.forEach(c => { const tags = [c.ctype, c.branch, c.loc, c.src, c.gender, c.nat, c.emo, c.child]; if (c.topic) tags.push(...c.topic.split('، ')); tags.filter(Boolean).forEach(tag => { if (!analyticsTerms.includes(tag)) { counts[tag] = (counts[tag] || 0) + 1; } }); });
   const topTags = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(t => t[0]);
   if (!topTags.length) { container.innerHTML = ''; return; }
-  container.innerHTML = `<span style="font-size:13px;color:var(--tl2);font-weight:800;margin-left:4px;">الأكثر ظهورا:</span> ` + 
-    topTags.map(tag => `<button onclick="addSuggestedTag('${tag}')" class="ob" style="padding:6px 14px; font-size:12px; border-radius:100px; background:var(--bg); border:1px solid var(--border); box-shadow:var(--ss);">${tag}</button>`).join('');
+  container.innerHTML = `<span style="font-size:13px;color:var(--tl2);font-weight:800;margin-left:4px;">الأكثر ظهورا:</span> ` + topTags.map(tag => `<button onclick="addSuggestedTag('${tag}')" class="ob" style="padding:6px 14px; font-size:12px; border-radius:100px; background:var(--bg); border:1px solid var(--border); box-shadow:var(--ss);">${tag}</button>`).join('');
 }
-
 function renderFilteredLog(){ 
   renderLog(filteredLogCalls()); 
   if (typeof textViewActive !== 'undefined' && textViewActive) { buildTextView(); }
 }
-
 function timeSlot(dt){ const h=dt.getHours(); if(h>=12&&h<14) return '12:00~2:00م'; if(h>=14&&h<16) return '2:00~4:00م'; if(h>=16&&h<18) return '4:00~6:00م'; if(h>=18&&h<20) return '6:00~8:00م'; if(h>=20&&h<22) return '8:00~10:00م'; if(h>=22) return '10:00~12:00م'; if(h>=0&&h<2) return '12:00~2:00ص'; if(h>=2&&h<4) return '2:00~4:00ص'; if(h>=4&&h<6) return '4:00~6:00ص'; if(h>=6&&h<8) return '6:00~8:00ص'; if(h>=8&&h<10) return '8:00~10:00ص'; if(h>=10&&h<12) return '10:00~12:00ص'; return null; }
 
 // ===== LINE CHART =====
@@ -1545,53 +1594,43 @@ function formatGroupKey(key, scale) { if(scale==='day'){ const [y,m,d]=key.split
 
 let lineChartInstance = null;
 function updateLineChart() {
-    const scale = document.getElementById('timeScaleSelect').value;
-    const fc = filteredCalls();
-    const sorted = [...fc].sort((a,b) => a.dt - b.dt);
-    const grouped = {};
-    sorted.forEach(c => { const k=getGroupKey(c.dt,scale); if(!grouped[k]) grouped[k]={total:0}; grouped[k].total++; });
-    const labels = Object.keys(grouped);
-    const displayLabels = labels.map(k => formatGroupKey(k, scale));
-    const dataTotal = labels.map(k => grouped[k].total);
-    const ctx = document.getElementById('timelineChart').getContext('2d');
-    if(lineChartInstance) lineChartInstance.destroy();
-    lineChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: { labels: displayLabels, datasets: [{ label: 'إجمالي النشاط', data: dataTotal, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.3, fill: true, borderWidth: 2, pointRadius: 2, pointHoverRadius: 5 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', rtl: true, labels: { font: { family: 'Cairo', weight: 'bold' } } }, tooltip: { titleFont: { family: 'Cairo' }, bodyFont: { family: 'Cairo' }, rtl: true, textDirection: 'rtl' } }, scales: { y: { beginAtZero: true, position: 'right', ticks: { stepSize: 1, font: { family: 'Cairo' } } }, x: { ticks: { font: { family: 'Cairo' } } } } }
-    });
+  const scale = document.getElementById('timeScaleSelect').value;
+  const fc = filteredCalls();
+  const sorted = [...fc].sort((a,b) => a.dt - b.dt);
+  const grouped = {};
+  sorted.forEach(c => { const k=getGroupKey(c.dt,scale); if(!grouped[k]) grouped[k]={total:0}; grouped[k].total++; });
+  const labels = Object.keys(grouped);
+  const displayLabels = labels.map(k => formatGroupKey(k, scale));
+  const dataTotal = labels.map(k => grouped[k].total);
+  const ctx = document.getElementById('timelineChart').getContext('2d');
+  if(lineChartInstance) lineChartInstance.destroy();
+  lineChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels: displayLabels, datasets: [{ label: 'إجمالي النشاط', data: dataTotal, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.3, fill: true, borderWidth: 2, pointRadius: 2, pointHoverRadius: 5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', rtl: true, labels: { font: { family: 'Cairo', weight: 'bold' } } }, tooltip: { titleFont: { family: 'Cairo' }, bodyFont: { family: 'Cairo' }, rtl: true, textDirection: 'rtl' } }, scales: { y: { beginAtZero: true, position: 'right', ticks: { stepSize: 1, font: { family: 'Cairo' } } }, x: { ticks: { font: { family: 'Cairo' } } } } }
+  });
 }
 
 function updateAnalytics(){
   const fc=filteredCalls();
   document.getElementById('stTotal').textContent=fc.length; document.getElementById('stComp').textContent=fc.filter(c=>c.ctype==='شكوى').length; document.getElementById('stInq').textContent=fc.filter(c=>c.ctype==='استفسار').length; document.getElementById('stReq').textContent=fc.filter(c=>c.ctype==='طلب').length;
   updateLineChart();
-
   const branchGrid = document.getElementById('branchAnalyticsGrid');
   if (branchGrid) {
-      let branchHtml = '';
-      S.branches.forEach(br => {
-          const brCalls = fc.filter(c => c.branch === br);
-          const count = brCalls.length;
-          const topicsMap = {};
-          brCalls.forEach(c => { if (c.topic) { c.topic.split('، ').filter(Boolean).forEach(t => { topicsMap[t] = (topicsMap[t] || 0) + 1; }); } });
-          const topTopics = Object.entries(topicsMap).sort((a,b) => b[1]-a[1]).slice(0, 5);
-          let topicsHtml = topTopics.length ? topTopics.map(([t, c]) => `<div style="display:flex; justify-content:space-between; font-size:12px; border-bottom:1px solid var(--border); padding:6px 0;"><span style="color:var(--t2); font-weight:700;">${t}</span><span style="background:var(--al); color:var(--accent); padding:2px 8px; border-radius:10px; font-weight:800;">${c}</span></div>`).join('') : '<div style="font-size:12px; color:var(--tl2); text-align:center; padding:10px 0;">لا توجد مواضيع مضافة</div>';
-          branchHtml += `<div class="sc" style="padding:16px; display:flex; flex-direction:column; gap:12px; border-top: 4px solid var(--accent); background:var(--white);"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:15px; font-weight:800; color:var(--text);">${br}</div><div style="font-size:24px; font-weight:800; color:var(--accent);">${count}</div></div><div style="background:var(--bg); border-radius:10px; padding:8px 12px; flex:1;">${topicsHtml}</div></div>`;
-      });
-      branchGrid.innerHTML = branchHtml;
+    let branchHtml = '';
+    S.branches.forEach(br => {
+      const brCalls = fc.filter(c => c.branch === br); const count = brCalls.length;
+      const topicsMap = {}; brCalls.forEach(c => { if (c.topic) { c.topic.split('، ').filter(Boolean).forEach(t => { topicsMap[t] = (topicsMap[t] || 0) + 1; }); } });
+      const topTopics = Object.entries(topicsMap).sort((a,b) => b[1]-a[1]).slice(0, 5);
+      let topicsHtml = topTopics.length ? topTopics.map(([t, c]) => `<div style="display:flex; justify-content:space-between; font-size:12px; border-bottom:1px solid var(--border); padding:6px 0;"><span style="color:var(--t2); font-weight:700;">${t}</span><span style="background:var(--al); color:var(--accent); padding:2px 8px; border-radius:10px; font-weight:800;">${c}</span></div>`).join('') : '<div style="font-size:12px; color:var(--tl2); text-align:center; padding:10px 0;">لا توجد مواضيع مضافة</div>';
+      branchHtml += `<div class="sc" style="padding:16px; display:flex; flex-direction:column; gap:12px; border-top: 4px solid var(--accent); background:var(--white);"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:15px; font-weight:800; color:var(--text);">${br}</div><div style="font-size:24px; font-weight:800; color:var(--accent);">${count}</div></div><div style="background:var(--bg); border-radius:10px; padding:8px 12px; flex:1;">${topicsHtml}</div></div>`;
+    });
+    branchGrid.innerHTML = branchHtml;
   }
-
   const p1=['#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe']; const p2=['#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff']; const p3=['#6366f1','#ec4899']; const p4=['#06b6d4','#22d3ee','#67e8f9','#a5f3fc','#cffafe','#ecfeff']; const p5=['#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5'];
   const cnt=(k)=>{const m={};fc.forEach(c=>{if(c[k])m[c[k]]=(m[c[k]]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);};
   renderBar('chLoc', cnt('loc'), p1); renderPie('chNat', cnt('nat'), p2); renderPie('chGen', cnt('gender'), p3); renderBar('chSrc', cnt('src'), p1);
-  renderStatCards('chChild', cnt('child'), p4);
-  renderStatCards('chEmo', cnt('emo'), p5);
-
-  const topicPalettes={'شكوى':['#ef4444','#f87171','#fca5a5','#fecaca','#fee2e2'],'استفسار':['#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff'],'طلب':['#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5']};
-  const ctypeElMap={'شكوى':'chTopComp','استفسار':'chTopInq','طلب':'chTopReq'};
-  ['شكوى','استفسار','طلب'].forEach(ct=>{ const subset=fc.filter(c=>c.ctype===ct); const m={}; subset.forEach(c=>{ if(!c.topic) return; c.topic.split('، ').filter(Boolean).forEach(t=>{ m[t]=(m[t]||0)+1; }); }); const data=Object.entries(m).sort((a,b)=>b[1]-a[1]); renderCountsList(ctypeElMap[ct], data, topicPalettes[ct]); });
-
+  renderStatCards('chChild', cnt('child'), p4); renderStatCards('chEmo', cnt('emo'), p5);
   const ORDER=['12:00~2:00م','2:00~4:00م','4:00~6:00م','6:00~8:00م','8:00~10:00م','10:00~12:00م','12:00~2:00ص','2:00~4:00ص','4:00~6:00ص','6:00~8:00ص','8:00~10:00ص','10:00~12:00ص'];
   const tm={}; fc.forEach(c=>{ const s=timeSlot(c.dt); if(s) tm[s]=(tm[s]||0)+1; }); const tmData=ORDER.filter(k=>tm[k]).map(k=>[k,tm[k]]);
   renderPie('chTime', tmData, ['#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff','#06b6d4','#22d3ee','#67e8f9','#a5f3fc','#10b981','#34d399']);
@@ -1605,13 +1644,15 @@ function renderPie(id, data, colors){ const el=document.getElementById(id); if(!
 
 // ===== MAINTENANCE =====
 const MSECS=[
-  {key:'nat', lbl:'الجنسيات', ph:'أضف جنسية...'},{key:'branches',lbl:'الفروع', ph:'أضف فرعاً...'},{key:'locs', lbl:'مواقع العميل', ph:'أضف موقعاً...'},
-  {key:'ctypes', lbl:'أنواع المكالمة', ph:'أضف نوعاً...'},{key:'emos', lbl:'مشاعر العميل', ph:'أضف مشاعر...'},{key:'srcs', lbl:'مصادر الوصول', ph:'أضف مصدراً...'}
+  {key:'nat', lbl:'الجنسيات', ph:'أضف جنسية...'},{key:'branches',lbl:'الفروع', ph:'أضف فرعاً...'},
+  {key:'locs', lbl:'مواقع العميل', ph:'أضف موقعاً...'},{key:'ctypes', lbl:'أنواع المكالمة', ph:'أضف نوعاً...'},
+  {key:'emos', lbl:'مشاعر العميل', ph:'أضف مشاعر...'},{key:'srcs', lbl:'مصادر الوصول', ph:'أضف مصدراً...'}
 ];
 
 function renderMBody(){
   let html=MSECS.map(sec=>`
-    <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);"><div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">${sec.lbl}</div>
+    <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+      <div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">${sec.lbl}</div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
         ${S[sec.key].map((item,i)=>`<div style="display:flex;align-items:center;gap:12px;">
             <span style="flex:0 0 100px;font-size:14px;font-weight:700;color:var(--text);">${item}</span>
@@ -1621,23 +1662,39 @@ function renderMBody(){
       <div style="display:flex;gap:10px;"><input type="text" class="min" id="madd-${sec.key}" placeholder="${sec.ph}" onkeydown="if(event.key==='Enter')addItem('${sec.key}')"/><button class="btn-p" onclick="addItem('${sec.key}')" style="padding:10px 20px;">إضافة</button></div>
     </div>`).join('');
 
-  html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);"><div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">تسميات عدد الأطفال</div><div style="display:flex;flex-direction:column;gap:8px;">
-    ${CHILD_OPTS.map(item=>`<div style="display:flex;align-items:center;gap:12px;"><span style="flex:0 0 100px;font-size:14px;font-weight:700;color:var(--text);">${item}</span>
-        <input type="text" class="min" style="flex:1;" placeholder="تسمية..." value="${S.labels[item]||CHILD_LABELS_DEF[item]||''}" oninput="S.labels['${item}']=this.value; saveS(); renderChildren();" /></div>`).join('')}</div></div>`;
+  html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+    <div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">تسميات عدد الأطفال</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${CHILD_OPTS.map(item=>`<div style="display:flex;align-items:center;gap:12px;"><span style="flex:0 0 100px;font-size:14px;font-weight:700;color:var(--text);">${item}</span>
+          <input type="text" class="min" style="flex:1;" placeholder="تسمية..." value="${S.labels[item]||CHILD_LABELS_DEF[item]||''}" oninput="S.labels['${item}']=this.value; saveS(); renderChildren();" /></div>`).join('')}
+    </div></div>`;
 
-  html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);"><div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">أرقام واتساب الفروع</div><div style="display:flex;flex-direction:column;gap:8px;">
-    ${S.branches.map(br=>`<div style="display:flex;align-items:center;gap:12px;"><span style="flex:0 0 100px;font-size:14px;font-weight:700;color:var(--text);">${br}</span>
-        <input type="tel" inputmode="numeric" class="min" style="flex:1;direction:ltr;" placeholder="05XXXXXXXX" maxlength="10" value="${S.branchPhones[br]||''}" oninput="S.branchPhones['${br}']=this.value; saveS();" /></div>`).join('')}</div></div>`;
+  html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+    <div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">أرقام واتساب الفروع</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${S.branches.map(br=>`<div style="display:flex;align-items:center;gap:12px;"><span style="flex:0 0 100px;font-size:14px;font-weight:700;color:var(--text);">${br}</span>
+          <input type="tel" inputmode="numeric" class="min" style="flex:1;direction:ltr;" placeholder="05XXXXXXXX" maxlength="10" value="${S.branchPhones[br]||''}" oninput="S.branchPhones['${br}']=this.value; saveS();" /></div>`).join('')}
+    </div></div>`;
 
-  html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);"><div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">رقم واتساب الإدارة</div><div style="display:flex;gap:10px;">
-      <input type="tel" inputmode="numeric" class="min" style="direction:ltr;" placeholder="05XXXXXXXX" maxlength="10" value="${S.adminPhone||''}" oninput="S.adminPhone=this.value; saveS();" /></div></div>`;
+  html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+    <div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:16px;">رقم واتساب الإدارة</div>
+    <div style="display:flex;gap:10px;">
+      <input type="tel" inputmode="numeric" class="min" style="direction:ltr;" placeholder="05XXXXXXXX" maxlength="10" value="${S.adminPhone||''}" oninput="S.adminPhone=this.value; saveS();" />
+    </div></div>`;
 
   // Firebase Config Section
   html += `<div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);">
     <div style="font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:8px;">إعدادات Firebase</div>
-    <div style="font-size:12px; color:var(--tl2); margin-bottom:8px;">حالة الاتصال: <span style="font-weight:800; color:${window._firestoreReady ? 'var(--green)' : 'var(--red)'}">${window._firestoreReady ? '● متصل بـ customer-service-ddb34' : '● غير متصل'}</span></div>
-    <div style="background:var(--gl2,#f0fdf4); border-radius:10px; padding:12px 16px; font-size:12px; color:#166534; line-height:1.8; border:1px solid var(--gl,#86efac);">
-      ✓ Firebase مُهيأ ومتصل بمشروع <strong>customer-service-ddb34</strong>
+    <div style="font-size:12px; color:var(--tl2); margin-bottom:16px;">حالة الاتصال: <span style="font-weight:800; color:${window._firestoreReady ? 'var(--green)' : 'var(--red)'}">${window._firestoreReady ? 'متصل ✓' : 'غير متصل — راجع إعدادات firebaseConfig'}</span></div>
+    <div style="background:var(--ambl); border-radius:10px; padding:12px 16px; font-size:12px; color:#925c0e; line-height:1.8;">
+      <strong>لتفعيل Firebase:</strong><br>
+      1. افتح Firebase Console وأنشئ مشروعاً<br>
+      2. فعّل Firestore Database<br>
+      3. أضف قواعد الأمان من الملف<br>
+      4. عدّل قسم <code>firebaseConfig</code> في الكود بإعداداتك
+    </div>
+    <div style="margin-top:12px; padding:10px 14px; background:#f1f5f9; border-radius:8px; font-size:11px; color:var(--t2);">
+      <strong>لتقليل تكلفة Firebase:</strong> التطبيق يستخدم الكاش المحلي أولاً، ويقرأ من السيرفر فقط عند الحاجة. كما يستخدم Batch Write عند الاستيراد لتقليل عدد الكتابات.
     </div>
   </div>`;
 
@@ -1659,8 +1716,24 @@ function delItem(k,i){ const removed=S[k][i]; S[k].splice(i,1); saveS(); const g
 
 // ===== TAGS PANEL =====
 let tagsPanelOpen = false;
-function toggleTagsPanel(){ tagsPanelOpen = !tagsPanelOpen; const panel = document.getElementById('tagsPanel'); const btn = document.getElementById('tagsToggleBtn'); panel.style.display = tagsPanelOpen ? 'block' : 'none'; btn.style.borderColor = tagsPanelOpen ? 'var(--accent)' : 'var(--border)'; btn.style.color = tagsPanelOpen ? 'var(--accent)' : 'var(--t2)'; btn.style.background  = tagsPanelOpen ? 'var(--al)' : 'var(--white)'; updateTagsBtnIndicator(); }
-function updateTagsBtnIndicator(){ const btn=document.getElementById('tagsToggleBtn'); if(!btn) return; const hasAny=Object.values(sel).some(v=>Array.isArray(v)?v.length>0:v!==''); btn.style.borderColor = tagsPanelOpen ? 'var(--accent)' : (hasAny ? 'var(--green)' : 'var(--border)'); btn.style.color = tagsPanelOpen ? 'var(--accent)' : (hasAny ? 'var(--green)' : 'var(--t2)'); }
+function toggleTagsPanel(){
+  tagsPanelOpen = !tagsPanelOpen;
+  const panel = document.getElementById('tagsPanel');
+  const btn = document.getElementById('tagsToggleBtn');
+  panel.style.display = tagsPanelOpen ? 'block' : 'none';
+  btn.style.borderColor = tagsPanelOpen ? 'var(--accent)' : 'var(--border)';
+  btn.style.color = tagsPanelOpen ? 'var(--accent)' : 'var(--t2)';
+  btn.style.background = tagsPanelOpen ? 'var(--al)' : 'var(--white)';
+  // ===== FIX: تأكد من رسم الأوسمة عند فتح اللوحة =====
+  if (tagsPanelOpen) { renderAllGroups(); }
+  updateTagsBtnIndicator();
+}
+function updateTagsBtnIndicator(){
+  const btn=document.getElementById('tagsToggleBtn'); if(!btn) return;
+  const hasAny=Object.values(sel).some(v=>Array.isArray(v)?v.length>0:v!=='');
+  btn.style.borderColor = tagsPanelOpen ? 'var(--accent)' : (hasAny ? 'var(--green)' : 'var(--border)');
+  btn.style.color = tagsPanelOpen ? 'var(--accent)' : (hasAny ? 'var(--green)' : 'var(--t2)');
+}
 
 // ===== TOAST & EXPORT =====
 function toast(msg, type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.className=`toast ${type} show`; setTimeout(()=>t.classList.remove('show'),3000); }
@@ -1670,43 +1743,58 @@ function toggleGroupMode(){ groupMode=!groupMode; const icon=document.getElement
 function exportCSV(){ if(!calls.length) return toast('لا توجد بيانات للتصدير','err'); const h=['تسلسل','التاريخ','الوقت','جوال العميل','الجنس','لكنة العميل','الفرع','الموقع','المصدر','الموضوع','نوع المكالمة','رقم الشكوى','رقم الطلب','الأطفال','نبرة العميل','التفاصيل']; const rows=calls.map(c=>[c.seq,fmtDate(c.dt),fmtTime(c.dt),c.phone,c.gender||'',c.nat||'',c.branch||'',c.loc||'',c.src||'',c.topic||'',c.ctype||'',c.compNo||'',c.reqNo||'',c.child||'',c.emo||'',`"${c.notes||''}"`]); const csv=[h,...rows].map(r=>r.join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'})); a.download=`calls_${new Date().toLocaleDateString('en-CA')}.csv`; a.click(); toast('تم تصدير الجدول بنجاح'); }
 function exportTXT(){ if(!calls.length) return toast('لا توجد بيانات للتصدير','err'); const dayMap={}, dayOrder=[]; [...calls].sort((a,b)=>a.dt-b.dt).forEach(c=>{ const k=dayKey(c.dt); if(!dayMap[k]){dayMap[k]={lbl:fmtDate(c.dt),cs:[]};dayOrder.push(k);} dayMap[k].cs.push(c); }); let txt=''; dayOrder.forEach(dk=>{ const{lbl,cs}=dayMap[dk]; txt+=`════════════════════════\n${lbl}\n════════════════════════\n\n`; cs.forEach(c=>{ txt+=`[${fmtTime(c.dt)}] — ${genSummary(c)}\n\n`; }); }); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+txt],{type:'text/plain;charset=utf-8;'})); a.download=`call_summaries_${new Date().toLocaleDateString('en-CA')}.txt`; a.click(); toast('تم تصدير الملخصات بنجاح'); }
 
-// ===== IMPORT =====
+// ===== IMPORT (يستخدم batchSave لتقليل التكلفة) =====
 async function handleImport(event) {
   const file = event.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
       const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(worksheet);
-      if(json.length === 0) { toast('الملف المرفق فارغ', 'err'); return; }
-      let importedCount = 0;
+      if (!json.length) { toast('الملف المرفق فارغ', 'err'); return; }
+
       const parseArabicDateTime = (dateStr, timeStr) => {
         let d = new Date();
         try {
-          if (typeof dateStr === 'number') { let utcDate = new Date(Math.round((dateStr - 25569) * 86400 * 1000)); d = new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate()); }
-          else if (dateStr) { if(dateStr.toString().includes('/')) { const parsed = new Date(dateStr); if(!isNaN(parsed)) d = parsed; } else if (dateStr.toString().includes('-')) { const parsed = new Date(dateStr); if(!isNaN(parsed)) d = parsed; } else { const parts = dateStr.toString().split(' '); if(parts.length >= 2) { const day = parseInt(parts[0]); const monthIdx = MONTHS.indexOf(parts[1]); if(!isNaN(day) && monthIdx !== -1) { d.setMonth(monthIdx); d.setDate(day); if (parts[2]) d.setFullYear(parseInt(parts[2])); } } } }
-          if(timeStr !== undefined && timeStr !== null) { if (typeof timeStr === 'number') { let totalSeconds = Math.round(timeStr * 86400); let h = Math.floor(totalSeconds / 3600); let m = Math.floor((totalSeconds % 3600) / 60); d.setHours(h, m, 0, 0); } else { const tParts = timeStr.toString().split(' '); let timeNumStr = tParts[0]; let modifier = tParts[1] || ''; if(timeNumStr.includes(':')) { let timeNum = timeNumStr.split(':'); let h = parseInt(timeNum[0]), m = parseInt(timeNum[1]); if((modifier === 'م' || modifier.toLowerCase() === 'pm') && h < 12) h += 12; if((modifier === 'ص' || modifier.toLowerCase() === 'am') && h === 12) h = 0; d.setHours(h, m, 0, 0); } } }
-        } catch(err) { console.error('Date parse err:', err); }
+          if (typeof dateStr === 'number') { const utc = new Date(Math.round((dateStr - 25569) * 86400 * 1000)); d = new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate()); }
+          else if (dateStr) { const s = dateStr.toString(); if (s.includes('/') || s.includes('-')) { const p = new Date(s); if (!isNaN(p)) d = p; } else { const parts = s.split(' '); if (parts.length >= 2) { const day = parseInt(parts[0]); const monthIdx = MONTHS.indexOf(parts[1]); if (!isNaN(day) && monthIdx !== -1) { d = new Date(d.getFullYear(), monthIdx, day); if (parts[2]) d.setFullYear(parseInt(parts[2])); } } } }
+          if (timeStr !== undefined && timeStr !== null) { if (typeof timeStr === 'number') { const total = Math.round(timeStr * 86400); d.setHours(Math.floor(total / 3600), Math.floor((total % 3600) / 60), 0, 0); } else { const tParts = timeStr.toString().split(' '); const tNums = tParts[0]; const mod = (tParts[1] || '').toLowerCase(); if (tNums.includes(':')) { let [h, m] = tNums.split(':').map(Number); if ((mod === 'م' || mod === 'pm') && h < 12) h += 12; if ((mod === 'ص' || mod === 'am') && h === 12) h = 0; d.setHours(h, m, 0, 0); } } }
+        } catch(err) {}
         return d;
       };
-      for(const row of json) {
-        const seq = row['تسلسل']; if(!seq) continue;
-        const rec = { seq: seq.toString(), dt: parseArabicDateTime(row['التاريخ'], row['الوقت']), phone: (row['جوال العميل'] || '').toString(), gender: row['الجنس'] || '', nat: row['لكنة العميل'] || '', branch: row['الفرع'] || '', loc: row['الموقع'] || '', src: row['المصدر'] || '', topic: row['الموضوع'] || '', ctype: row['نوع المكالمة'] || '', compNo: (row['رقم الشكوى'] || '').toString(), reqNo: (row['رقم الطلب'] || '').toString(), child: row['الأطفال'] || '', emo: row['نبرة العميل'] || '', notes: row['التفاصيل'] || '' };
+
+      toast(`جاري استيراد ${json.length} سجل...`, 'ok');
+      const newRecs = [];
+      for (const row of json) {
+        const seq = row['تسلسل']; if (!seq) continue;
+        const rec = { seq: seq.toString(), dt: parseArabicDateTime(row['التاريخ'], row['الوقت']), phone: (row['جوال العميل'] || '').toString(), gender: row['الجنس'] || '', nat: row['لكنة العميل'] || '', branch: row['الفرع'] || '', loc: row['الموقع'] || '', src: row['المصدر'] || '', topic: row['الموضوع'] || '', ctype: row['نوع المكالمة'] || '', compNo: (row['رقم الشكوى'] || '').toString(), reqNo: (row['رقم الطلب'] || '').toString(), child: row['الأطفال'] || '', emo: row['نبرة العميل'] || '', notes: (row['التفاصيل'] || '').toString() };
         const existingIdx = calls.findIndex(c => c.seq === rec.seq);
-        if(existingIdx >= 0) { calls[existingIdx] = {...calls[existingIdx], ...rec, dt: calls[existingIdx].dt}; }
-        else { calls.push(rec); }
-        await saveCallDB(rec);
-        await saveCallFirestore(rec);
-        importedCount++;
+        if (existingIdx >= 0) { calls[existingIdx] = { ...calls[existingIdx], ...rec }; } else { calls.push(rec); }
+        await saveCallDB(rec).catch(() => {});
+        newRecs.push(rec);
       }
-      calls.sort((a,b) => b.dt - a.dt);
-      toast(`تم استيراد ${importedCount} مكالمة بنجاح`, 'ok');
-      renderFilteredLog(); updateBadge();
-      if(document.getElementById('tab-analytics').classList.contains('active')) { updateAnalytics(); }
-    } catch (err) { console.error("Import Error: ", err); toast('حدث خطأ أثناء قراءة الملف', 'err'); }
+
+      // ===== استخدام batchSave لتقليل عدد الكتابات في Firebase =====
+      let syncNote = '';
+      if (FB.ready() && navigator.onLine) {
+        const ok = await FB.batchSave(newRecs);
+        syncNote = ok ? ' ورُفعت للخادم دفعةً واحدة' : ' (بعض السجلات ستُزامن لاحقاً)';
+        if (!ok) newRecs.forEach(r => OfflineQ.add('save', r));
+      } else {
+        newRecs.forEach(r => OfflineQ.add('save', r));
+        syncNote = ' (ستُزامن عند الاتصال)';
+      }
+
+      calls.sort((a, b) => b.dt - a.dt);
+      toast(`✓ تم استيراد ${newRecs.length} مكالمة${syncNote}`, 'ok');
+      renderFilteredLog(); updateBadge(); OfflineQ.updateBadge();
+      if (document.getElementById('tab-analytics').classList.contains('active')) updateAnalytics();
+    } catch(err) {
+      console.error('Import Error:', err);
+      toast('حدث خطأ أثناء قراءة الملف: ' + err.message, 'err');
+    }
     event.target.value = '';
   };
   reader.readAsArrayBuffer(file);
@@ -1715,7 +1803,6 @@ async function handleImport(event) {
 // ===== TEXT VIEW =====
 let textViewActive=false;
 function toggleTextView(){ textViewActive=!textViewActive; const panel=document.getElementById('textViewPanel'); const icon=document.getElementById('textViewIcon'); panel.style.display=textViewActive?'block':'none'; if(icon) icon.textContent=textViewActive?'✓':''; if(textViewActive) buildTextView(); }
-
 function briefLine(c){ 
   const f=c.gender==='أنثى'; const g=(m,fm)=>f?fm:m; 
   const ctypeColor=c.ctype==='شكوى'?'var(--red)':c.ctype==='طلب'?'var(--green)':'var(--accent)';
@@ -1746,145 +1833,104 @@ function buildTextView(){
 }
 function copyAllText(){ const body=document.getElementById('textViewBody'); const textToCopy=body.innerText||body.textContent; if(!textToCopy.trim()) return toast('لا يوجد نص للنسخ','err'); navigator.clipboard.writeText(textToCopy).then(()=>toast('تم نسخ النص كاملاً','ok')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=textToCopy; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('تم نسخ النص كاملاً','ok'); }); }
 
-// ===== OFFLINE QUEUE =====
-const OFFLINE_QUEUE_KEY = 'CS_OfflineQueue';
-function getOfflineQueue() {
-  try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); } catch(e) { return []; }
-}
-function saveOfflineQueue(q) {
-  try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q)); } catch(e) {}
-}
-function addToOfflineQueue(action, rec) {
-  const q = getOfflineQueue();
-  // remove duplicate seq
-  const filtered = q.filter(item => !(item.seq === (rec ? rec.seq : action.seq)));
-  filtered.push({ action, rec: rec ? {...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : rec.dt} : null, seq: rec ? rec.seq : action });
-  saveOfflineQueue(filtered);
-}
-async function syncOfflineQueue() {
-  if (!window._firestoreReady || !navigator.onLine) return;
-  const q = getOfflineQueue();
-  if (!q.length) return;
-  const remaining = [];
-  for (const item of q) {
-    try {
-      if (item.action === 'save' && item.rec) {
-        const rec = {...item.rec, dt: new Date(item.rec.dt)};
-        await saveCallFirestore(rec);
-      } else if (item.action === 'delete' && item.seq) {
-        await deleteCallFirestore(item.seq);
-      }
-    } catch(e) { remaining.push(item); }
-  }
-  saveOfflineQueue(remaining);
-  if (remaining.length < q.length) toast(`تم مزامنة ${q.length - remaining.length} سجل`, 'ok');
-}
-
-// Override saveCallFirestore to queue when offline
-const _origSaveCallFirestore = saveCallFirestore;
-window.saveCallFirestore = async function(rec) {
-  if (!navigator.onLine || !window._firestoreReady) {
-    addToOfflineQueue('save', rec);
-    return;
-  }
-  try {
-    await _origSaveCallFirestore(rec);
-  } catch(e) {
-    addToOfflineQueue('save', rec);
-  }
-};
-
-// Override deleteCallFirestore to queue when offline
-const _origDeleteCallFirestore = deleteCallFirestore;
-window.deleteCallFirestore = async function(seq) {
-  if (!navigator.onLine || !window._firestoreReady) {
-    addToOfflineQueue('delete', {seq});
-    return;
-  }
-  try {
-    await _origDeleteCallFirestore(seq);
-  } catch(e) {
-    addToOfflineQueue('delete', {seq});
-  }
-};
-
-// Sync when back online
-window.addEventListener('online', () => {
+// ===== ONLINE / OFFLINE EVENTS =====
+window.addEventListener('online', async () => {
   setFBStatus('online');
-  syncOfflineQueue();
+  toast('🔗 عاد الاتصال، جاري المزامنة...', 'ok');
+  OfflineQ.updateBadge();
+  // مزامنة القائمة المعلقة أولاً
+  await OfflineQ.sync();
+  // ثم تحديث البيانات من السيرفر
+  if (FB.ready()) {
+    const fsData = await FB.getAllFromServer();
+    if (fsData && fsData.length > 0) {
+      const fsSeqs = new Set(fsData.map(r => r.seq));
+      const localOnly = calls.filter(r => !fsSeqs.has(r.seq));
+      calls = [...fsData, ...localOnly];
+      for (const rec of fsData) { await saveCallDB(rec).catch(() => {}); }
+      calls.sort((a, b) => b.dt - a.dt);
+      renderFilteredLog(); updateBadge();
+      if (document.getElementById('tab-analytics').classList.contains('active')) updateAnalytics();
+    }
+  }
 });
+
 window.addEventListener('offline', () => {
   setFBStatus('error');
+  OfflineQ.updateBadge();
+  toast('⚠️ انقطع الاتصال — السجلات تُحفظ محلياً', 'err');
 });
 
-// Check queue on startup
-setTimeout(syncOfflineQueue, 2000);
-window.initAppAfterFirebase = async function() {
-  try {
-    await initDB();
-    
-    // محاولة تحميل البيانات من Firestore أولاً
-    let fsData = null;
-    if (window._firestoreReady) {
-      setFBStatus('online');
-      try {
-        fsData = await getAllCallsFirestore();
-      } catch(e) {
-        setFBStatus('error');
-        fsData = null;
-      }
-    }
+// ===== APP INIT =====
+async function initApp() {
+  try { await initDB(); } catch(e) { console.error('IndexedDB init failed:', e); toast('تحذير: قاعدة البيانات المحلية غير متاحة', 'err'); }
 
-    if (fsData && fsData.length > 0) {
-      // دمج بيانات Firestore مع IndexedDB المحلي
-      calls = fsData;
-      // تحديث IndexedDB بأحدث البيانات من Firestore
-      for(const rec of fsData) {
-        await saveCallDB(rec).catch(()=>{});
-      }
-    } else {
-      // استخدام البيانات المحلية
-      calls = await getAllCallsDB();
-    }
-    
-    calls.sort((a,b) => b.dt - a.dt);
-    updateSeqLabel();
-    renderAllGroups();
-    renderFilteredLog();
-    updateBadge();
+  let localCalls = [];
+  try { localCalls = await getAllCallsDB(); } catch(e) {}
 
-  } catch (error) {
-    console.error("خطأ أثناء تهيئة التطبيق:", error);
-    // محاولة تحميل البيانات المحلية كاحتياط
+  if (FB.ready() && navigator.onLine) {
+    setFBStatus('online');
     try {
-      calls = await getAllCallsDB();
-      calls.sort((a,b) => b.dt - a.dt);
-      renderAllGroups();
+      // ===== استخدام الكاش أولاً لتقليل التكلفة =====
+      const fsData = await FB.getAll();
+      if (fsData && fsData.length > 0) {
+        const fsSeqs = new Set(fsData.map(r => r.seq));
+        const localOnly = localCalls.filter(r => !fsSeqs.has(r.seq));
+        calls = [...fsData, ...localOnly];
+        for (const rec of fsData) { await saveCallDB(rec).catch(() => {}); }
+      } else if (localCalls.length > 0) {
+        calls = localCalls;
+        toast('جاري رفع البيانات المحلية للخادم...', 'ok');
+        await FB.batchSave(localCalls).catch(() => {});
+      } else { calls = []; }
+    } catch(e) { setFBStatus('error'); calls = localCalls; }
+  } else {
+    setFBStatus(localCalls.length > 0 ? 'error' : '');
+    calls = localCalls;
+    if (!FB.ready()) toast('Firestore غير مهيأ — يعمل بوضع محلي', 'err');
+  }
+
+  calls.sort((a, b) => b.dt - a.dt);
+  updateSeqLabel();
+  // ===== FIX: رسم الأوسمة فور التهيئة =====
+  renderAllGroups();
+  renderFilteredLog();
+  updateBadge();
+  OfflineQ.updateBadge();
+  setTimeout(() => OfflineQ.sync(), 1500);
+
+  // ===== مستمع الوقت الفعلي — يزامن بين المستخدمين فورياً =====
+  if (FB.ready() && navigator.onLine) {
+    FB.startListener((freshData) => {
+      if (!freshData || !freshData.length) return;
+      const freshSeqs = new Set(freshData.map(r => r.seq));
+      const localOnly = calls.filter(r => !freshSeqs.has(r.seq));
+      calls = [...freshData, ...localOnly];
+      calls.sort((a, b) => b.dt - a.dt);
+      for (const rec of freshData) { saveCallDB(rec).catch(() => {}); }
       renderFilteredLog();
       updateBadge();
-    } catch(e2) {
-      toast("حدث خطأ في تحميل البيانات", "err");
-    }
+      if (document.getElementById('tab-analytics').classList.contains('active')) updateAnalytics();
+    });
   }
-};
+}
 
-// في حالة لم يتم تحميل Firebase module (خطأ في الاتصال)
-window.addEventListener('DOMContentLoaded', () => {
-  setTimeout(async () => {
-    if (!window._firestoreReady && calls.length === 0) {
-      setFBStatus('error');
-      try {
-        await initDB();
-        calls = await getAllCallsDB();
-        calls.sort((a,b) => b.dt - a.dt);
-        updateSeqLabel();
-        renderAllGroups();
-        renderFilteredLog();
-        updateBadge();
-      } catch(e) {}
-    }
-  }, 3000);
+// ===== BOOTSTRAP =====
+let _domReady = false;
+let _initStarted = false;
+
+function tryInit() {
+  if (_domReady && !_initStarted) {
+    _initStarted = true;
+    initApp();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => { _domReady = true; tryInit(); });
+document.addEventListener('firebaseReady', () => {
+  if (_initStarted) { setFBStatus(navigator.onLine ? 'online' : 'error'); OfflineQ.sync(); }
 });
+setTimeout(() => { if (!_initStarted) { _domReady = true; tryInit(); } }, 500);
 </script>
 </body>
 </html>
