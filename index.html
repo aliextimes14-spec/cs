@@ -6,10 +6,9 @@
 <!-- Firebase SDKs -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   // ===== FIREBASE CONFIG =====
-  // ضع هنا إعدادات مشروع Firebase الخاص بك
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -19,23 +18,30 @@
     appId: "YOUR_APP_ID"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const firestore = getFirestore(app);
+  try {
+    const app = initializeApp(firebaseConfig);
+    const firestore = getFirestore(app);
 
-  // ربط الدوال بالـ window لاستخدامها خارج الـ module
-  window._fsCollection = (name) => collection(firestore, name);
-  window._fsDoc = (colRef, id) => doc(colRef, id);
-  window._fsSetDoc = setDoc;
-  window._fsGetDoc = getDoc;
-  window._fsGetDocs = getDocs;
-  window._fsDeleteDoc = deleteDoc;
-  window._fsQuery = query;
-  window._fsOrderBy = orderBy;
-  window._firestoreReady = true;
+    // تفعيل الـ persistence المدمجة في Firestore (offline cache)
+    enableIndexedDbPersistence(firestore).catch(() => {});
 
-  window.addEventListener('DOMContentLoaded', async () => {
-    // الانتظار حتى يصبح Firestore جاهزاً
-    await window.initAppAfterFirebase();
+    window._fsCollection = (name) => collection(firestore, name);
+    window._fsDoc = (colRef, id) => doc(colRef, id);
+    window._fsSetDoc = setDoc;
+    window._fsGetDoc = getDoc;
+    window._fsGetDocs = getDocs;
+    window._fsDeleteDoc = deleteDoc;
+    window._fsQuery = query;
+    window._fsOrderBy = orderBy;
+    window._firestoreReady = true;
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    window._firestoreReady = false;
+  }
+
+  // نُطلق حدثاً مخصصاً بعد تحميل الـ module ليستقبله الـ script العادي
+  window.addEventListener('load', () => {
+    document.dispatchEvent(new CustomEvent('firebaseReady'));
   });
 </script>
 <meta charset="UTF-8">
@@ -405,7 +411,6 @@ body {
   .sg { grid-template-columns: 1fr; }
   .dgrid { grid-template-columns: 1fr; }
 }
-@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
 </style>
 </head>
 <body>
@@ -418,10 +423,6 @@ body {
     <div class="fb-status" id="fbStatus">
       <div class="fb-dot" id="fbDot"></div>
       <span id="fbStatusText">Firebase</span>
-    </div>
-    <div class="fb-status" id="offlineQueueStatus" style="display:none; background:var(--ambl); border-color:var(--amber);">
-      <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);animation:pulse 1s infinite;"></div>
-      <span id="offlineQueueCount" style="color:#925c0e;">0 في الانتظار</span>
     </div>
     <div class="hdr-clock" style="display:none;align-items:center;gap:4px;padding:4px 12px;">
       <button onclick="changeFontSize(-1)" title="تصغير الخط" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:15px;font-weight:800;padding:4px;transition:color .2s;">−</button>
@@ -442,21 +443,21 @@ body {
   <div class="fc">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:nowrap;position:relative;overflow-x:auto;">
       <span id="seqLabel" style="display:none;font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
-      <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:0 10px;height:38px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
-      <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:0 14px;height:38px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;">#</button>
+      <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:8px 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+      <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:8px 14px;font-weight:800;font-size:15px;">#</button>
       
-      <button class="ob" style="position:relative;padding:0 16px;height:38px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+      <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
         <span id="dateBtnText">التاريخ</span>
         <input type="date" id="datePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDatePick(this.value)" />
       </button>
       
-      <button class="ob" style="position:relative;padding:0 16px;height:38px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+      <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
         <span id="timeBtnText">الوقت</span>
         <input type="time" id="timePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onTimePick(this.value)" />
       </button>
 
-      <button class="btn-s" onclick="clearForm()" style="padding:0 14px;height:38px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:0 18px;height:38px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
+      <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 18px;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
     </div>
     <div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -671,51 +672,138 @@ body {
 <script>
 Chart.defaults.font.family = 'Cairo';
 
-// ===== FIREBASE HELPERS (will be set after module loads) =====
-let _fbReady = false;
+// ===== FIREBASE LAYER =====
+// جميع عمليات Firestore تمر من هنا — نقطة واحدة موثوقة
+const FB = {
+  ready: () => !!window._firestoreReady,
+
+  async save(rec) {
+    if (!FB.ready()) { OfflineQ.add('save', rec); return; }
+    const data = { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) };
+    try {
+      const col = window._fsCollection('calls');
+      const ref = window._fsDoc(col, rec.seq);
+      await window._fsSetDoc(ref, data);
+    } catch(e) {
+      console.warn('FB.save failed, queuing:', e.message);
+      OfflineQ.add('save', rec);
+    }
+  },
+
+  async remove(seq) {
+    if (!FB.ready()) { OfflineQ.add('delete', { seq }); return; }
+    try {
+      const col = window._fsCollection('calls');
+      const ref = window._fsDoc(col, seq);
+      await window._fsDeleteDoc(ref);
+    } catch(e) {
+      console.warn('FB.remove failed, queuing:', e.message);
+      OfflineQ.add('delete', { seq });
+    }
+  },
+
+  async getAll() {
+    if (!FB.ready()) return null;
+    try {
+      const col = window._fsCollection('calls');
+      const snap = await window._fsGetDocs(col);
+      const results = [];
+      snap.forEach(d => {
+        const data = d.data();
+        results.push({ ...data, dt: new Date(data.dt) });
+      });
+      return results;
+    } catch(e) {
+      console.warn('FB.getAll failed:', e.message);
+      setFBStatus('error');
+      return null;
+    }
+  }
+};
 
 function setFBStatus(state) {
   const dot = document.getElementById('fbDot');
   const txt = document.getElementById('fbStatusText');
   if (!dot || !txt) return;
   dot.className = 'fb-dot ' + (state === 'online' ? 'online' : state === 'error' ? 'error' : '');
-  txt.textContent = state === 'online' ? 'متصل' : state === 'error' ? 'خطأ' : 'Firebase';
+  txt.textContent = state === 'online' ? 'متصل' : state === 'error' ? 'غير متصل' : 'Firebase';
 }
 
-async function saveCallFirestore(rec) {
-  if (!window._firestoreReady) return;
-  try {
-    const col = window._fsCollection('calls');
-    const docRef = window._fsDoc(col, rec.seq);
-    const data = { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : rec.dt };
-    await window._fsSetDoc(docRef, data);
-  } catch(e) { console.error('Firestore save error:', e); }
-}
+// ===== OFFLINE QUEUE =====
+const OfflineQ = {
+  KEY: 'CS_OfflineQueue',
 
-async function deleteCallFirestore(seq) {
-  if (!window._firestoreReady) return;
-  try {
-    const col = window._fsCollection('calls');
-    const docRef = window._fsDoc(col, seq);
-    await window._fsDeleteDoc(docRef);
-  } catch(e) { console.error('Firestore delete error:', e); }
-}
+  get() {
+    try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); } catch(e) { return []; }
+  },
 
-async function getAllCallsFirestore() {
-  if (!window._firestoreReady) return null;
-  try {
-    const col = window._fsCollection('calls');
-    const snapshot = await window._fsGetDocs(col);
-    const results = [];
-    snapshot.forEach(doc => {
-      const d = doc.data();
-      results.push({ ...d, dt: new Date(d.dt) });
+  set(q) {
+    try {
+      localStorage.setItem(this.KEY, JSON.stringify(q));
+      this.updateBadge();
+    } catch(e) {}
+  },
+
+  add(action, rec) {
+    const q = this.get();
+    const seq = rec ? rec.seq : null;
+    // نزيل أي إدخال قديم لنفس السجل
+    const filtered = seq ? q.filter(i => !(i.seq === seq && i.action === action)) : q;
+    filtered.push({
+      action,
+      seq,
+      rec: rec ? { ...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : String(rec.dt) } : null,
+      ts: Date.now()
     });
-    return results;
-  } catch(e) { console.error('Firestore read error:', e); setFBStatus('error'); return null; }
-}
+    this.set(filtered);
+  },
 
-// ===== IndexedDB (local backup) =====
+  updateBadge() {
+    const q = this.get();
+    const badge = document.getElementById('offlineQueueStatus');
+    const count = document.getElementById('offlineQueueCount');
+    if (!badge || !count) return;
+    if (q.length > 0) {
+      badge.style.display = 'flex';
+      count.textContent = q.length + ' في الانتظار';
+    } else {
+      badge.style.display = 'none';
+    }
+  },
+
+  async sync() {
+    if (!FB.ready() || !navigator.onLine) return;
+    const q = this.get();
+    if (!q.length) return;
+
+    const remaining = [];
+    let synced = 0;
+    for (const item of q) {
+      try {
+        if (item.action === 'save' && item.rec) {
+          const rec = { ...item.rec, dt: new Date(item.rec.dt) };
+          // استدعاء مباشر لـ Firestore تجاوزاً للـ queue
+          const data = { ...rec, dt: rec.dt.toISOString() };
+          const col = window._fsCollection('calls');
+          const ref = window._fsDoc(col, rec.seq);
+          await window._fsSetDoc(ref, data);
+          synced++;
+        } else if (item.action === 'delete' && item.seq) {
+          const col = window._fsCollection('calls');
+          const ref = window._fsDoc(col, item.seq);
+          await window._fsDeleteDoc(ref);
+          synced++;
+        }
+      } catch(e) {
+        remaining.push(item);
+      }
+    }
+    this.set(remaining);
+    if (synced > 0) toast(`✓ تمت مزامنة ${synced} سجل`, 'ok');
+  }
+};
+
+// ===== IndexedDB =====
 const DB_NAME = 'CS_DB';
 const STORE_NAME = 'calls';
 let db;
@@ -724,9 +812,9 @@ function initDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
     req.onupgradeneeded = e => {
-      db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'seq' });
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE_NAME)) {
+        d.createObjectStore(STORE_NAME, { keyPath: 'seq' });
       }
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
@@ -739,19 +827,46 @@ function getAllCallsDB() {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
     const req = store.getAll();
-    req.onsuccess = () => resolve(req.result.map(c => ({...c, dt: new Date(c.dt)})));
+    req.onsuccess = () => {
+      resolve(req.result.map(c => ({ ...c, dt: new Date(c.dt) })));
+    };
     req.onerror = () => reject(req.error);
   });
 }
 
 function saveCallDB(call) {
   return new Promise((resolve, reject) => {
+    if (!db) { resolve(); return; }
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    const req = store.put(call);
+    // نحوّل dt إلى ISO string لضمان التوافق مع IndexedDB
+    const rec = { ...call, dt: call.dt instanceof Date ? call.dt.toISOString() : String(call.dt) };
+    const req = store.put(rec);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
+}
+
+// ===== دالة الحفظ المركزية (تُستخدم في كل مكان) =====
+async function persistCall(rec) {
+  // 1. حفظ محلي فوري
+  await saveCallDB(rec).catch(e => console.warn('IndexedDB save error:', e));
+  // 2. إرسال لـ Firestore (أو queue إذا offline)
+  await FB.save(rec);
+}
+
+// ===== دالة الحذف المركزية =====
+async function persistDelete(seq) {
+  // 1. حذف محلي فوري
+  await new Promise((res) => {
+    if (!db) { res(); return; }
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).delete(seq);
+    tx.oncomplete = res;
+    tx.onerror = res;
+  });
+  // 2. حذف من Firestore (أو queue إذا offline)
+  await FB.remove(seq);
 }
 
 // ===== SETTINGS =====
@@ -767,9 +882,9 @@ const S_DEFAULT = {
     'شكوى':    ['أسلوب الموظفات','قائمة الحظر','السلامة','الختم','شكوى قانونية','سياسة الإلغاء'],
     'طلب':     ['مفقودات','التواصل','حفلة خاصة','مكان الفرع','الإطمئنان']
   },
-  labels: {},          
-  branchPhones: {},    
-  adminPhone: ''       
+  labels: {},
+  branchPhones: {},
+  adminPhone: ''
 };
 
 let S = JSON.parse(localStorage.getItem('CS_Settings_v2')) || S_DEFAULT;
@@ -1029,9 +1144,7 @@ async function submitCall(){
   };
 
   try {
-    await saveCallDB(rec);
-    // حفظ في Firestore أيضاً
-    await saveCallFirestore(rec);
+    await persistCall(rec);
 
     if(editSeq!==null){
       const idx=calls.findIndex(c=>c.seq===editSeq);
@@ -1058,22 +1171,15 @@ async function submitCall(){
 async function deleteCall(seq) {
   if(!confirm('هل أنت متأكد من حذف هذه المكالمة تماماً؟')) return;
   try {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    store.delete(seq);
-    tx.oncomplete = async () => {
-      // حذف من Firestore أيضاً
-      await deleteCallFirestore(seq);
-      // حذف أسماء الأطفال المحفوظة
-      deleteChildNames(seq);
-      calls = calls.filter(c => c.seq !== seq);
-      renderFilteredLog();
-      updateBadge();
-      if(document.getElementById('tab-analytics').classList.contains('active')){
-         updateAnalytics();
-      }
-      toast('تم الحذف بنجاح', 'ok');
-    };
+    await persistDelete(seq);
+    deleteChildNames(seq);
+    calls = calls.filter(c => c.seq !== seq);
+    renderFilteredLog();
+    updateBadge();
+    if(document.getElementById('tab-analytics').classList.contains('active')){
+      updateAnalytics();
+    }
+    toast('تم الحذف بنجاح', 'ok');
   } catch(err) {
     console.error(err);
     toast('حدث خطأ أثناء الحذف', 'err');
@@ -1527,44 +1633,104 @@ function exportTXT(){ if(!calls.length) return toast('لا توجد بيانات
 
 // ===== IMPORT =====
 async function handleImport(event) {
-  const file = event.target.files[0]; if (!file) return;
+  const file = event.target.files[0];
+  if (!file) return;
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
       const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(worksheet);
-      if(json.length === 0) { toast('الملف المرفق فارغ', 'err'); return; }
-      let importedCount = 0;
+      if (!json.length) { toast('الملف المرفق فارغ', 'err'); return; }
+
       const parseArabicDateTime = (dateStr, timeStr) => {
         let d = new Date();
         try {
-          if (typeof dateStr === 'number') { let utcDate = new Date(Math.round((dateStr - 25569) * 86400 * 1000)); d = new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate()); }
-          else if (dateStr) { if(dateStr.toString().includes('/')) { const parsed = new Date(dateStr); if(!isNaN(parsed)) d = parsed; } else if (dateStr.toString().includes('-')) { const parsed = new Date(dateStr); if(!isNaN(parsed)) d = parsed; } else { const parts = dateStr.toString().split(' '); if(parts.length >= 2) { const day = parseInt(parts[0]); const monthIdx = MONTHS.indexOf(parts[1]); if(!isNaN(day) && monthIdx !== -1) { d.setMonth(monthIdx); d.setDate(day); if (parts[2]) d.setFullYear(parseInt(parts[2])); } } } }
-          if(timeStr !== undefined && timeStr !== null) { if (typeof timeStr === 'number') { let totalSeconds = Math.round(timeStr * 86400); let h = Math.floor(totalSeconds / 3600); let m = Math.floor((totalSeconds % 3600) / 60); d.setHours(h, m, 0, 0); } else { const tParts = timeStr.toString().split(' '); let timeNumStr = tParts[0]; let modifier = tParts[1] || ''; if(timeNumStr.includes(':')) { let timeNum = timeNumStr.split(':'); let h = parseInt(timeNum[0]), m = parseInt(timeNum[1]); if((modifier === 'م' || modifier.toLowerCase() === 'pm') && h < 12) h += 12; if((modifier === 'ص' || modifier.toLowerCase() === 'am') && h === 12) h = 0; d.setHours(h, m, 0, 0); } } }
-        } catch(err) { console.error('Date parse err:', err); }
+          if (typeof dateStr === 'number') {
+            const utc = new Date(Math.round((dateStr - 25569) * 86400 * 1000));
+            d = new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
+          } else if (dateStr) {
+            const s = dateStr.toString();
+            if (s.includes('/') || s.includes('-')) {
+              const p = new Date(s); if (!isNaN(p)) d = p;
+            } else {
+              const parts = s.split(' ');
+              if (parts.length >= 2) {
+                const day = parseInt(parts[0]);
+                const monthIdx = MONTHS.indexOf(parts[1]);
+                if (!isNaN(day) && monthIdx !== -1) {
+                  d = new Date(d.getFullYear(), monthIdx, day);
+                  if (parts[2]) d.setFullYear(parseInt(parts[2]));
+                }
+              }
+            }
+          }
+          if (timeStr !== undefined && timeStr !== null) {
+            if (typeof timeStr === 'number') {
+              const total = Math.round(timeStr * 86400);
+              d.setHours(Math.floor(total / 3600), Math.floor((total % 3600) / 60), 0, 0);
+            } else {
+              const tParts = timeStr.toString().split(' ');
+              const tNums = tParts[0];
+              const mod = (tParts[1] || '').toLowerCase();
+              if (tNums.includes(':')) {
+                let [h, m] = tNums.split(':').map(Number);
+                if ((mod === 'م' || mod === 'pm') && h < 12) h += 12;
+                if ((mod === 'ص' || mod === 'am') && h === 12) h = 0;
+                d.setHours(h, m, 0, 0);
+              }
+            }
+          }
+        } catch(err) { console.warn('Date parse err:', err); }
         return d;
       };
+
       toast(`جاري استيراد ${json.length} سجل...`, 'ok');
-      for(const row of json) {
-        const seq = row['تسلسل']; if(!seq) continue;
-        const rec = { seq: seq.toString(), dt: parseArabicDateTime(row['التاريخ'], row['الوقت']), phone: (row['جوال العميل'] || '').toString(), gender: row['الجنس'] || '', nat: row['لكنة العميل'] || '', branch: row['الفرع'] || '', loc: row['الموقع'] || '', src: row['المصدر'] || '', topic: row['الموضوع'] || '', ctype: row['نوع المكالمة'] || '', compNo: (row['رقم الشكوى'] || '').toString(), reqNo: (row['رقم الطلب'] || '').toString(), child: row['الأطفال'] || '', emo: row['نبرة العميل'] || '', notes: row['التفاصيل'] || '' };
+      let importedCount = 0;
+
+      for (const row of json) {
+        const seq = row['تسلسل'];
+        if (!seq) continue;
+        const rec = {
+          seq:     seq.toString(),
+          dt:      parseArabicDateTime(row['التاريخ'], row['الوقت']),
+          phone:   (row['جوال العميل'] || '').toString(),
+          gender:  row['الجنس'] || '',
+          nat:     row['لكنة العميل'] || '',
+          branch:  row['الفرع'] || '',
+          loc:     row['الموقع'] || '',
+          src:     row['المصدر'] || '',
+          topic:   row['الموضوع'] || '',
+          ctype:   row['نوع المكالمة'] || '',
+          compNo:  (row['رقم الشكوى'] || '').toString(),
+          reqNo:   (row['رقم الطلب'] || '').toString(),
+          child:   row['الأطفال'] || '',
+          emo:     row['نبرة العميل'] || '',
+          notes:   (row['التفاصيل'] || '').toString()
+        };
+
+        // تحديث الذاكرة
         const existingIdx = calls.findIndex(c => c.seq === rec.seq);
-        if(existingIdx >= 0) { calls[existingIdx] = {...calls[existingIdx], ...rec, dt: calls[existingIdx].dt}; }
+        if (existingIdx >= 0) { calls[existingIdx] = { ...calls[existingIdx], ...rec }; }
         else { calls.push(rec); }
-        await saveCallDB(rec);
-        // saveCallFirestore is already overridden — queues when offline, syncs when online
-        await window.saveCallFirestore(rec);
+
+        // حفظ محلي وFirestore معاً عبر persistCall
+        await persistCall(rec);
         importedCount++;
       }
-      calls.sort((a,b) => b.dt - a.dt);
-      const isOnline = navigator.onLine && window._firestoreReady;
-      toast(`✓ تم استيراد ${importedCount} مكالمة${isOnline ? ' ورُفعت للخادم' : ' (ستُزامن عند الاتصال)'}`, 'ok');
-      renderFilteredLog(); updateBadge(); updateOfflineQueueBadge();
-      if(document.getElementById('tab-analytics').classList.contains('active')) { updateAnalytics(); }
-    } catch (err) { console.error("Import Error: ", err); toast('حدث خطأ أثناء قراءة الملف', 'err'); }
+
+      calls.sort((a, b) => b.dt - a.dt);
+      const syncNote = (FB.ready() && navigator.onLine) ? ' ورُفعت للخادم' : ' (ستُزامن عند الاتصال)';
+      toast(`✓ تم استيراد ${importedCount} مكالمة${syncNote}`, 'ok');
+      renderFilteredLog();
+      updateBadge();
+      OfflineQ.updateBadge();
+      if (document.getElementById('tab-analytics').classList.contains('active')) updateAnalytics();
+    } catch(err) {
+      console.error('Import Error:', err);
+      toast('حدث خطأ أثناء قراءة الملف: ' + err.message, 'err');
+    }
     event.target.value = '';
   };
   reader.readAsArrayBuffer(file);
@@ -1604,186 +1770,122 @@ function buildTextView(){
 }
 function copyAllText(){ const body=document.getElementById('textViewBody'); const textToCopy=body.innerText||body.textContent; if(!textToCopy.trim()) return toast('لا يوجد نص للنسخ','err'); navigator.clipboard.writeText(textToCopy).then(()=>toast('تم نسخ النص كاملاً','ok')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=textToCopy; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('تم نسخ النص كاملاً','ok'); }); }
 
-// ===== OFFLINE QUEUE =====
-const OFFLINE_QUEUE_KEY = 'CS_OfflineQueue';
-
-function getOfflineQueue() {
-  try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); } catch(e) { return []; }
-}
-function saveOfflineQueue(q) {
-  try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q)); updateOfflineQueueBadge(); } catch(e) {}
-}
-function updateOfflineQueueBadge() {
-  const q = getOfflineQueue();
-  const badge = document.getElementById('offlineQueueStatus');
-  const count = document.getElementById('offlineQueueCount');
-  if (!badge || !count) return;
-  if (q.length > 0 && !navigator.onLine) {
-    badge.style.display = 'flex';
-    count.textContent = q.length + ' في الانتظار';
-  } else {
-    badge.style.display = 'none';
-  }
-}
-function addToOfflineQueue(action, rec) {
-  const q = getOfflineQueue();
-  const key = rec ? rec.seq : (typeof action === 'object' ? action.seq : action);
-  const filtered = q.filter(item => !(item.seq === key && item.action === (typeof action === 'string' ? action : action.action)));
-  filtered.push({ action: typeof action === 'string' ? action : action.action, rec: rec ? {...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : rec.dt} : null, seq: key, ts: Date.now() });
-  saveOfflineQueue(filtered);
-}
-
-async function syncOfflineQueue() {
-  if (!window._firestoreReady || !navigator.onLine) return;
-  const q = getOfflineQueue();
-  if (!q.length) return;
-  const remaining = [];
-  let synced = 0;
-  for (const item of q) {
-    try {
-      if (item.action === 'save' && item.rec) {
-        const rec = {...item.rec, dt: new Date(item.rec.dt)};
-        await _origSaveCallFirestore(rec);
-        synced++;
-      } else if (item.action === 'delete' && item.seq) {
-        await _origDeleteCallFirestore(item.seq);
-        synced++;
-      }
-    } catch(e) { remaining.push(item); }
-  }
-  saveOfflineQueue(remaining);
-  if (synced > 0) toast(`✓ تمت مزامنة ${synced} سجل`, 'ok');
-  updateOfflineQueueBadge();
-}
-
-// Override saveCallFirestore to queue when offline
-const _origSaveCallFirestore = saveCallFirestore;
-window.saveCallFirestore = async function(rec) {
-  if (!navigator.onLine || !window._firestoreReady) {
-    addToOfflineQueue('save', rec);
-    updateOfflineQueueBadge();
-    return;
-  }
-  try {
-    await _origSaveCallFirestore(rec);
-  } catch(e) {
-    addToOfflineQueue('save', rec);
-    updateOfflineQueueBadge();
-  }
-};
-
-// Override deleteCallFirestore to queue when offline
-const _origDeleteCallFirestore = deleteCallFirestore;
-window.deleteCallFirestore = async function(seq) {
-  if (!navigator.onLine || !window._firestoreReady) {
-    addToOfflineQueue('delete', {seq});
-    updateOfflineQueueBadge();
-    return;
-  }
-  try {
-    await _origDeleteCallFirestore(seq);
-  } catch(e) {
-    addToOfflineQueue('delete', {seq});
-    updateOfflineQueueBadge();
-  }
-};
-
-// Sync when back online — immediate real-time sync + reload fresh data
+// ===== ONLINE / OFFLINE EVENTS =====
 window.addEventListener('online', async () => {
   setFBStatus('online');
   toast('🔗 عاد الاتصال، جاري المزامنة...', 'ok');
-  updateOfflineQueueBadge();
-  await syncOfflineQueue();
-  // After syncing pending writes, reload fresh data from Firestore
-  if (window._firestoreReady) {
-    try {
-      const fsData = await getAllCallsFirestore();
-      if (fsData && fsData.length > 0) {
-        calls = fsData;
-        for(const rec of fsData) { await saveCallDB(rec).catch(()=>{}); }
-        calls.sort((a,b) => b.dt - a.dt);
-        renderFilteredLog(); updateBadge();
-        if(document.getElementById('tab-analytics').classList.contains('active')) updateAnalytics();
-      }
-    } catch(e) {}
+  OfflineQ.updateBadge();
+  // مزامنة القائمة المعلقة أولاً
+  await OfflineQ.sync();
+  // ثم تحديث البيانات من Firestore
+  if (FB.ready()) {
+    const fsData = await FB.getAll();
+    if (fsData && fsData.length > 0) {
+      // دمج: نأخذ من Firestore ونُكمل ما ليس فيه من المحلي
+      const fsSeqs = new Set(fsData.map(r => r.seq));
+      const localOnly = calls.filter(r => !fsSeqs.has(r.seq));
+      calls = [...fsData, ...localOnly];
+      for (const rec of fsData) { await saveCallDB(rec).catch(() => {}); }
+      calls.sort((a, b) => b.dt - a.dt);
+      renderFilteredLog(); updateBadge();
+      if (document.getElementById('tab-analytics').classList.contains('active')) updateAnalytics();
+    }
   }
 });
 
 window.addEventListener('offline', () => {
   setFBStatus('error');
-  updateOfflineQueueBadge();
-  toast('⚠️ لا يوجد اتصال — سيتم حفظ السجلات محلياً', 'err');
+  OfflineQ.updateBadge();
+  toast('⚠️ انقطع الاتصال — السجلات تُحفظ محلياً', 'err');
 });
 
-// Check queue on startup and show badge if pending
-setTimeout(() => { updateOfflineQueueBadge(); syncOfflineQueue(); }, 2000);
-window.initAppAfterFirebase = async function() {
+// ===== APP INIT =====
+async function initApp() {
   try {
     await initDB();
-    
-    // محاولة تحميل البيانات من Firestore أولاً
-    let fsData = null;
-    if (window._firestoreReady) {
-      setFBStatus('online');
-      try {
-        fsData = await getAllCallsFirestore();
-      } catch(e) {
-        setFBStatus('error');
-        fsData = null;
-      }
-    }
-
-    if (fsData && fsData.length > 0) {
-      // دمج بيانات Firestore مع IndexedDB المحلي
-      calls = fsData;
-      // تحديث IndexedDB بأحدث البيانات من Firestore
-      for(const rec of fsData) {
-        await saveCallDB(rec).catch(()=>{});
-      }
-    } else {
-      // استخدام البيانات المحلية
-      calls = await getAllCallsDB();
-    }
-    
-    calls.sort((a,b) => b.dt - a.dt);
-    updateSeqLabel();
-    renderAllGroups();
-    renderFilteredLog();
-    updateBadge();
-    if (typeof updateOfflineQueueBadge === 'function') updateOfflineQueueBadge();
-
-  } catch (error) {
-    console.error("خطأ أثناء تهيئة التطبيق:", error);
-    // محاولة تحميل البيانات المحلية كاحتياط
-    try {
-      calls = await getAllCallsDB();
-      calls.sort((a,b) => b.dt - a.dt);
-      renderAllGroups();
-      renderFilteredLog();
-      updateBadge();
-    } catch(e2) {
-      toast("حدث خطأ في تحميل البيانات", "err");
-    }
+  } catch(e) {
+    console.error('IndexedDB init failed:', e);
+    toast('تحذير: قاعدة البيانات المحلية غير متاحة', 'err');
   }
-};
 
-// في حالة لم يتم تحميل Firebase module (خطأ في الاتصال)
-window.addEventListener('DOMContentLoaded', () => {
-  setTimeout(async () => {
-    if (!window._firestoreReady && calls.length === 0) {
+  // تحميل البيانات المحلية فوراً لعرض شيء سريع
+  let localCalls = [];
+  try { localCalls = await getAllCallsDB(); } catch(e) {}
+
+  if (FB.ready() && navigator.onLine) {
+    setFBStatus('online');
+    try {
+      const fsData = await FB.getAll();
+      if (fsData && fsData.length > 0) {
+        // دمج Firestore + المحلي
+        const fsSeqs = new Set(fsData.map(r => r.seq));
+        const localOnly = localCalls.filter(r => !fsSeqs.has(r.seq));
+        calls = [...fsData, ...localOnly];
+        // تحديث IndexedDB بالبيانات الجديدة من Firestore
+        for (const rec of fsData) { await saveCallDB(rec).catch(() => {}); }
+      } else if (localCalls.length > 0) {
+        // Firestore فارغ لكن عندنا بيانات محلية — نرفعها
+        calls = localCalls;
+        toast('جاري رفع البيانات المحلية للخادم...', 'ok');
+        for (const rec of localCalls) { await FB.save(rec).catch(() => {}); }
+      } else {
+        calls = [];
+      }
+    } catch(e) {
       setFBStatus('error');
-      try {
-        await initDB();
-        calls = await getAllCallsDB();
-        calls.sort((a,b) => b.dt - a.dt);
-        updateSeqLabel();
-        renderAllGroups();
-        renderFilteredLog();
-        updateBadge();
-      } catch(e) {}
+      calls = localCalls;
     }
-  }, 3000);
+  } else {
+    setFBStatus(localCalls.length > 0 ? 'error' : '');
+    calls = localCalls;
+    if (!FB.ready()) toast('Firestore غير مهيأ — يعمل بوضع محلي', 'err');
+  }
+
+  calls.sort((a, b) => b.dt - a.dt);
+  updateSeqLabel();
+  renderAllGroups();
+  renderFilteredLog();
+  updateBadge();
+  OfflineQ.updateBadge();
+
+  // مزامنة أي قائمة انتظار متبقية
+  setTimeout(() => OfflineQ.sync(), 1500);
+}
+
+// الاستماع لحدث firebaseReady (من module) أو DOMContentLoaded أيهما يأتي أخيراً
+let _domReady = false;
+let _fbEventFired = false;
+
+function tryInit() {
+  if (_domReady && !_initStarted) {
+    _initStarted = true;
+    initApp();
+  }
+}
+let _initStarted = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+  _domReady = true;
+  tryInit();
 });
+
+document.addEventListener('firebaseReady', () => {
+  _fbEventFired = true;
+  if (_initStarted) {
+    // Firebase جاهز بعد أن بدأ الـ init — نُحدّث الحالة فقط
+    setFBStatus(navigator.onLine ? 'online' : 'error');
+    OfflineQ.sync();
+  }
+  // إذا لم يبدأ الـ init بعد سيُطلق من DOMContentLoaded
+});
+
+// احتياطي: إذا Firebase module فشل تماماً (مثلاً config خاطئ)
+setTimeout(() => {
+  if (!_initStarted) {
+    _domReady = true;
+    tryInit();
+  }
+}, 500);
 </script>
 </body>
 </html>
