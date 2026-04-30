@@ -13,20 +13,19 @@
     getDocsFromCache, getDocsFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // ===== FIREBASE CONFIG — ضع إعداداتك هنا =====
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCWVLIZMsWFeGvBjU69iQeHc4LkXx_TgLg",
+    authDomain: "customer-service-ddb34.firebaseapp.com",
+    projectId: "customer-service-ddb34",
+    storageBucket: "customer-service-ddb34.firebasestorage.app",
+    messagingSenderId: "109576870374",
+    appId: "1:109576870374:web:e1a4c7dc726543ebc7de27"
   };
 
   try {
     const app = initializeApp(firebaseConfig);
     const firestore = getFirestore(app);
-
+  
     // تفعيل الـ persistence المدمجة في Firestore (offline cache)
     enableIndexedDbPersistence(firestore).catch((err) => {
       console.warn('Persistence failed:', err.code);
