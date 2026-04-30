@@ -405,6 +405,7 @@ body {
   .sg { grid-template-columns: 1fr; }
   .dgrid { grid-template-columns: 1fr; }
 }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
 </style>
 </head>
 <body>
@@ -417,6 +418,10 @@ body {
     <div class="fb-status" id="fbStatus">
       <div class="fb-dot" id="fbDot"></div>
       <span id="fbStatusText">Firebase</span>
+    </div>
+    <div class="fb-status" id="offlineQueueStatus" style="display:none; background:var(--ambl); border-color:var(--amber);">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);animation:pulse 1s infinite;"></div>
+      <span id="offlineQueueCount" style="color:#925c0e;">0 في الانتظار</span>
     </div>
     <div class="hdr-clock" style="display:none;align-items:center;gap:4px;padding:4px 12px;">
       <button onclick="changeFontSize(-1)" title="تصغير الخط" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:15px;font-weight:800;padding:4px;transition:color .2s;">−</button>
@@ -437,21 +442,21 @@ body {
   <div class="fc">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:nowrap;position:relative;overflow-x:auto;">
       <span id="seqLabel" style="display:none;font-size:13px;font-weight:800;color:var(--tl2);letter-spacing:.5px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">تسلسل —</span>
-      <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:8px 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
-      <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:8px 14px;font-weight:800;font-size:15px;">#</button>
+      <button id="dateSettingsBtn" onclick="toggleDateSettings()" title="تعديل التاريخ الافتراضي" class="ob" style="padding:0 10px;height:38px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+      <button id="tagsToggleBtn" onclick="toggleTagsPanel()" class="ob" style="padding:0 14px;height:38px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;">#</button>
       
-      <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
+      <button class="ob" style="position:relative;padding:0 16px;height:38px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
         <span id="dateBtnText">التاريخ</span>
         <input type="date" id="datePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDatePick(this.value)" />
       </button>
       
-      <button class="ob" style="position:relative; padding:8px 16px; overflow:hidden;">
+      <button class="ob" style="position:relative;padding:0 16px;height:38px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
         <span id="timeBtnText">الوقت</span>
         <input type="time" id="timePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onTimePick(this.value)" />
       </button>
 
-      <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 18px;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
+      <button class="btn-s" onclick="clearForm()" style="padding:0 14px;height:38px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+      <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:0 18px;height:38px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
     </div>
     <div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1542,6 +1547,7 @@ async function handleImport(event) {
         } catch(err) { console.error('Date parse err:', err); }
         return d;
       };
+      toast(`جاري استيراد ${json.length} سجل...`, 'ok');
       for(const row of json) {
         const seq = row['تسلسل']; if(!seq) continue;
         const rec = { seq: seq.toString(), dt: parseArabicDateTime(row['التاريخ'], row['الوقت']), phone: (row['جوال العميل'] || '').toString(), gender: row['الجنس'] || '', nat: row['لكنة العميل'] || '', branch: row['الفرع'] || '', loc: row['الموقع'] || '', src: row['المصدر'] || '', topic: row['الموضوع'] || '', ctype: row['نوع المكالمة'] || '', compNo: (row['رقم الشكوى'] || '').toString(), reqNo: (row['رقم الطلب'] || '').toString(), child: row['الأطفال'] || '', emo: row['نبرة العميل'] || '', notes: row['التفاصيل'] || '' };
@@ -1549,12 +1555,14 @@ async function handleImport(event) {
         if(existingIdx >= 0) { calls[existingIdx] = {...calls[existingIdx], ...rec, dt: calls[existingIdx].dt}; }
         else { calls.push(rec); }
         await saveCallDB(rec);
-        await saveCallFirestore(rec);
+        // saveCallFirestore is already overridden — queues when offline, syncs when online
+        await window.saveCallFirestore(rec);
         importedCount++;
       }
       calls.sort((a,b) => b.dt - a.dt);
-      toast(`تم استيراد ${importedCount} مكالمة بنجاح`, 'ok');
-      renderFilteredLog(); updateBadge();
+      const isOnline = navigator.onLine && window._firestoreReady;
+      toast(`✓ تم استيراد ${importedCount} مكالمة${isOnline ? ' ورُفعت للخادم' : ' (ستُزامن عند الاتصال)'}`, 'ok');
+      renderFilteredLog(); updateBadge(); updateOfflineQueueBadge();
       if(document.getElementById('tab-analytics').classList.contains('active')) { updateAnalytics(); }
     } catch (err) { console.error("Import Error: ", err); toast('حدث خطأ أثناء قراءة الملف', 'err'); }
     event.target.value = '';
@@ -1598,36 +1606,54 @@ function copyAllText(){ const body=document.getElementById('textViewBody'); cons
 
 // ===== OFFLINE QUEUE =====
 const OFFLINE_QUEUE_KEY = 'CS_OfflineQueue';
+
 function getOfflineQueue() {
   try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); } catch(e) { return []; }
 }
 function saveOfflineQueue(q) {
-  try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q)); } catch(e) {}
+  try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q)); updateOfflineQueueBadge(); } catch(e) {}
+}
+function updateOfflineQueueBadge() {
+  const q = getOfflineQueue();
+  const badge = document.getElementById('offlineQueueStatus');
+  const count = document.getElementById('offlineQueueCount');
+  if (!badge || !count) return;
+  if (q.length > 0 && !navigator.onLine) {
+    badge.style.display = 'flex';
+    count.textContent = q.length + ' في الانتظار';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 function addToOfflineQueue(action, rec) {
   const q = getOfflineQueue();
-  // remove duplicate seq
-  const filtered = q.filter(item => !(item.seq === (rec ? rec.seq : action.seq)));
-  filtered.push({ action, rec: rec ? {...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : rec.dt} : null, seq: rec ? rec.seq : action });
+  const key = rec ? rec.seq : (typeof action === 'object' ? action.seq : action);
+  const filtered = q.filter(item => !(item.seq === key && item.action === (typeof action === 'string' ? action : action.action)));
+  filtered.push({ action: typeof action === 'string' ? action : action.action, rec: rec ? {...rec, dt: rec.dt instanceof Date ? rec.dt.toISOString() : rec.dt} : null, seq: key, ts: Date.now() });
   saveOfflineQueue(filtered);
 }
+
 async function syncOfflineQueue() {
   if (!window._firestoreReady || !navigator.onLine) return;
   const q = getOfflineQueue();
   if (!q.length) return;
   const remaining = [];
+  let synced = 0;
   for (const item of q) {
     try {
       if (item.action === 'save' && item.rec) {
         const rec = {...item.rec, dt: new Date(item.rec.dt)};
-        await saveCallFirestore(rec);
+        await _origSaveCallFirestore(rec);
+        synced++;
       } else if (item.action === 'delete' && item.seq) {
-        await deleteCallFirestore(item.seq);
+        await _origDeleteCallFirestore(item.seq);
+        synced++;
       }
     } catch(e) { remaining.push(item); }
   }
   saveOfflineQueue(remaining);
-  if (remaining.length < q.length) toast(`تم مزامنة ${q.length - remaining.length} سجل`, 'ok');
+  if (synced > 0) toast(`✓ تمت مزامنة ${synced} سجل`, 'ok');
+  updateOfflineQueueBadge();
 }
 
 // Override saveCallFirestore to queue when offline
@@ -1635,12 +1661,14 @@ const _origSaveCallFirestore = saveCallFirestore;
 window.saveCallFirestore = async function(rec) {
   if (!navigator.onLine || !window._firestoreReady) {
     addToOfflineQueue('save', rec);
+    updateOfflineQueueBadge();
     return;
   }
   try {
     await _origSaveCallFirestore(rec);
   } catch(e) {
     addToOfflineQueue('save', rec);
+    updateOfflineQueueBadge();
   }
 };
 
@@ -1649,26 +1677,46 @@ const _origDeleteCallFirestore = deleteCallFirestore;
 window.deleteCallFirestore = async function(seq) {
   if (!navigator.onLine || !window._firestoreReady) {
     addToOfflineQueue('delete', {seq});
+    updateOfflineQueueBadge();
     return;
   }
   try {
     await _origDeleteCallFirestore(seq);
   } catch(e) {
     addToOfflineQueue('delete', {seq});
+    updateOfflineQueueBadge();
   }
 };
 
-// Sync when back online
-window.addEventListener('online', () => {
+// Sync when back online — immediate real-time sync + reload fresh data
+window.addEventListener('online', async () => {
   setFBStatus('online');
-  syncOfflineQueue();
-});
-window.addEventListener('offline', () => {
-  setFBStatus('error');
+  toast('🔗 عاد الاتصال، جاري المزامنة...', 'ok');
+  updateOfflineQueueBadge();
+  await syncOfflineQueue();
+  // After syncing pending writes, reload fresh data from Firestore
+  if (window._firestoreReady) {
+    try {
+      const fsData = await getAllCallsFirestore();
+      if (fsData && fsData.length > 0) {
+        calls = fsData;
+        for(const rec of fsData) { await saveCallDB(rec).catch(()=>{}); }
+        calls.sort((a,b) => b.dt - a.dt);
+        renderFilteredLog(); updateBadge();
+        if(document.getElementById('tab-analytics').classList.contains('active')) updateAnalytics();
+      }
+    } catch(e) {}
+  }
 });
 
-// Check queue on startup
-setTimeout(syncOfflineQueue, 2000);
+window.addEventListener('offline', () => {
+  setFBStatus('error');
+  updateOfflineQueueBadge();
+  toast('⚠️ لا يوجد اتصال — سيتم حفظ السجلات محلياً', 'err');
+});
+
+// Check queue on startup and show badge if pending
+setTimeout(() => { updateOfflineQueueBadge(); syncOfflineQueue(); }, 2000);
 window.initAppAfterFirebase = async function() {
   try {
     await initDB();
@@ -1702,6 +1750,7 @@ window.initAppAfterFirebase = async function() {
     renderAllGroups();
     renderFilteredLog();
     updateBadge();
+    if (typeof updateOfflineQueueBadge === 'function') updateOfflineQueueBadge();
 
   } catch (error) {
     console.error("خطأ أثناء تهيئة التطبيق:", error);
