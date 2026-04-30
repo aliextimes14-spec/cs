@@ -1855,14 +1855,17 @@ function getStepItems(step) {
     return S[step.itemsKey] || [];
   }
   if (step.id === 'topic') {
-    if (sel.ctype && S.topicMap[sel.ctype]) {
-      return S.topicMap[sel.ctype];
+    if (sel.ctype) {
+      // تأكد من وجود المفتاح وأعد القيم الافتراضية إذا كان فارغاً أو غير موجود
+      if (!S.topicMap[sel.ctype] || S.topicMap[sel.ctype].length === 0) {
+        S.topicMap[sel.ctype] = [...(S_DEFAULT.topicMap[sel.ctype] || [])];
+      }
+      return S.topicMap[sel.ctype] || [];
     }
     return [];
   }
   return [];
 }
-
 function renderTagsStep() {
   const container = document.getElementById('tagsStepContainer');
   const nav = document.getElementById('tagsStepNav');
