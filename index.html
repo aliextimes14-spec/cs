@@ -1,10 +1,9 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-</script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js">
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
@@ -710,7 +709,6 @@ body {
   margin-bottom: 12px;
 }
 
-/* ===== TAGS PANEL == == == == */
 .trow {
   display: flex;
   flex-direction: column;
@@ -897,7 +895,6 @@ body {
   pointer-events: none;
 }
 
-/* حاوية خطوة الوسم */
 .tag-step-container {
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1179,7 +1176,7 @@ body {
         <input type="time" id="timePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onTimePick(this.value)" />
       </button>
 
-  <!-- ===== صف الأزرار العلوية (التاريخ، الوقت، المسح، الحفظ) ===== -->  <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+      <button class="btn-s" onclick="clearForm()" style="padding:8px 14px;" title="مسح"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       <button class="btn-p" id="submitBtn" onclick="submitCall()" style="padding:8px 18px;" title="حفظ"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
     </div>
     <div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
@@ -1193,8 +1190,15 @@ body {
       </div>
     </div>
 
-    <!-- ===== TAGS PANEL مع الخطوات المتتابعة ===== -->
-    <div id="tagsPanel" style="display:none;margin-bottom:20px;" data-step-controlled="true">
+    <div class="fg" id="step-phone-section">
+      <input type="tel" inputmode="numeric" class="fi" id="phone" placeholder="05XXXXXXXX" maxlength="10" oninput="onPhoneInput(this.value)" style="font-size:18px;font-weight:800;letter-spacing:1px;" />
+    </div>
+    <div class="fg" id="step-details-section" style="margin-top:16px; display:none;">
+      <textarea class="fta" id="details" placeholder="ماذا قال العميل...؟"></textarea>
+    </div>
+
+    <!-- ===== TAGS PANEL مع الخطوات المتتابعة (تحت حقل التفاصيل) ===== -->
+    <div id="tagsPanel" style="display:none;margin-top:16px;margin-bottom:20px;" data-step-controlled="true">
       <!-- حاوية الخطوة الحالية - تولد ديناميكياً -->
       <div id="tagsStepContainer"></div>
       <!-- أزرار التنقل بين الخطوات -->
@@ -1208,67 +1212,10 @@ body {
       <div class="cond" id="condReq" style="margin-top:12px;display:none;"><input type="text" class="fi" id="reqNo" placeholder="رقم الطلب..." /></div>
     </div>
 
-    <div class="fg" id="step-phone-section">
-      <input type="tel" inputmode="numeric" class="fi" id="phone" placeholder="05XXXXXXXX" maxlength="10" oninput="onPhoneInput(this.value)" style="font-size:18px;font-weight:800;letter-spacing:1px;" />
-    </div>
-    <div class="fg" id="step-details-section" style="margin-top:16px; display:none;">
-      <textarea class="fta" id="details" placeholder="ماذا قال العميل...؟"></textarea>
-    </div>
     <div class="notice" id="custNotice" style="margin-top:12px; display:none; align-items:center; gap:10px; background:var(--al); border-radius:12px; padding:12px 16px; font-weight:700; color:var(--accent);">
       <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
       <span id="custNoticeText">عميل مسجل</span>
     </div>
-
-<!-- ===== لوحة إعدادات التاريخ (تظهر عند الحاجة) ===== -->
-<div id="dateSettingsPanel" style="display:none;margin-bottom:16px;border-radius:12px;padding:12px 16px;border:1px solid var(--border);">
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <span id="fixedDateDisplay" style="font-size:14px;font-weight:800;color:var(--text);flex:1;min-width:60px;">—</span>
-    <button class="btn-p" style="position:relative; padding:8px 16px; font-size:12px; overflow:hidden;">
-      <span>تعديل</span>
-      <input type="date" id="defaultDatePicker" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="onDefaultDatePick(this.value)" />
-    </button>
-    <button id="resetDefaultDateBtn" onclick="resetDefaultDate()" class="btn-s" style="padding:8px 16px; font-size:12px; color:var(--teal); border-color:var(--teal);">إزالة ↺</button>
-  </div>
-</div>
-
-<!-- ===== حقل رقم الهاتف (يظهر دائماً) ===== -->
-<div class="fg" id="step-phone-section">
-  <input type="tel" inputmode="numeric" class="fi" id="phone" placeholder="05XXXXXXXX" maxlength="10" oninput="onPhoneInput(this.value)" style="font-size:18px;font-weight:800;letter-spacing:1px;" />
-</div>
-
-<!-- ===== حقل تفاصيل المكالمة (يظهر بعد الخطوة الأولى) ===== -->
-<div class="fg" id="step-details-section" style="margin-top:16px; display:none;">
-  <textarea class="fta" id="details" placeholder="ماذا قال العميل...؟"></textarea>
-</div>
-
-<!-- ===== لوحة الأوسمة (تظهر بعد التفاصيل) ===== -->
-<div id="tagsPanel" style="display:none;margin-bottom:20px;" data-step-controlled="true">
-  <!-- حاوية الخطوة الحالية - تولد ديناميكياً -->
-  <div id="tagsStepContainer"></div>
-  <!-- أزرار التنقل بين الخطوات -->
-  <div id="tagsStepNav" style="display:flex;gap:8px;margin-top:12px;justify-content:space-between;">
-    <button class="btn-s" id="tagsPrevBtn" onclick="tagsStepPrev()" style="display:none;">← السابق</button>
-    <span id="tagsStepIndicator" style="font-size:12px;font-weight:700;color:var(--tl2);align-self:center;"></span>
-    <button class="btn-s" id="tagsSkipBtn" onclick="tagsStepNext()">تخطي ←</button>
-  </div>
-  <!-- شروط إضافية (تظهر حسب نوع المكالمة) -->
-  <div class="cond" id="condComp" style="margin-top:12px;display:none;"><input type="text" class="fi" id="compNo" placeholder="رقم الشكوى..." /></div>
-  <div class="cond" id="condReq" style="margin-top:12px;display:none;"><input type="text" class="fi" id="reqNo" placeholder="رقم الطلب..." /></div>
-</div>
-
-<!-- ===== شريط إشعار العميل المسجل (يظهر تلقائياً عند وجود مكالمات سابقة) ===== -->
-<div class="notice" id="custNotice" style="margin-top:12px; display:none; align-items:center; gap:10px; background:var(--al); border-radius:12px; padding:12px 16px; font-weight:700; color:var(--accent);">
-  <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
-  <span id="custNoticeText">عميل مسجل</span>
-</div>
-
-<!-- ===== زر التالي (يظهر بعد إدخال الهاتف) ===== -->
-<div id="nextBtnWrap" style="margin-top:16px; display:flex; justify-content:flex-start;">
-  <button class="btn-p" id="nextStepBtn" onclick="goNextStep()" style="padding:10px 28px; font-size:14px; display:flex; align-items:center; gap:8px;">
-    التالي
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-  </button>
-</div>
     <div id="nextBtnWrap" style="margin-top:16px; display:flex; justify-content:flex-start;">
       <button class="btn-p" id="nextStepBtn" onclick="goNextStep()" style="padding:10px 28px; font-size:14px; display:flex; align-items:center; gap:8px;">
         التالي
@@ -1905,13 +1852,13 @@ function switchTab(id, btn) {
 function getStepItems(step) {
   if (step.items) return step.items;
   if (step.itemsKey) {
-    if (step.itemsKey === 'topicMap') {
-      return sel.ctype && S.topicMap[sel.ctype] ? S.topicMap[sel.ctype] : [];
-    }
     return S[step.itemsKey] || [];
   }
   if (step.id === 'topic') {
-    return sel.ctype && S.topicMap[sel.ctype] ? S.topicMap[sel.ctype] : [];
+    if (sel.ctype && S.topicMap[sel.ctype]) {
+      return S.topicMap[sel.ctype];
+    }
+    return [];
   }
   return [];
 }
@@ -1924,7 +1871,6 @@ function renderTagsStep() {
   const skipBtn = document.getElementById('tagsSkipBtn');
   if (!container) return;
 
-  // في وضع التعديل نعرض كل الأوسمة دفعة واحدة
   if (isEditMode) {
     container.innerHTML = buildAllTagsHTML();
     if (nav) nav.style.display = 'flex';
@@ -1938,7 +1884,6 @@ function renderTagsStep() {
   }
 
   if (tagsStepIndex >= TAGS_STEPS.length) {
-    // جميع الخطوات مكتملة
     container.innerHTML =
       '<div style="text-align:center;padding:20px;color:var(--green);font-weight:800;font-size:15px;">✓ تم تحديد جميع الأوسمة</div>';
     if (nav) nav.style.display = 'flex';
@@ -1951,7 +1896,11 @@ function renderTagsStep() {
   }
 
   const step = TAGS_STEPS[tagsStepIndex];
-  const items = getStepItems(step);
+  let items = getStepItems(step);
+  // إصلاح: إذا كانت خطوة الموضوع والمواضيع فارغة بسبب عدم وجود ctype بعد
+  if (step.id === 'topic' && (!items || items.length === 0)) {
+    items = getStepItems(step); // إعادة المحاولة
+  }
   const currentVal = sel[step.group];
   const isMulti = step.group === 'topic';
 
@@ -1996,13 +1945,12 @@ function selectOptStep(btn, grp, stepId) {
       btn.classList.remove('sel'); } else { sel.topics.push(v);
       btn.classList.add('sel'); }
     touchDT();
-    // لا ننتقل تلقائياً للموضوع (قد يرغب المستخدم باختيار أكثر من موضوع)
     return;
   }
 
   const alreadySelected = btn.classList.contains('sel');
-  // إلغاء تحديد الكل أولاً
   document.querySelectorAll(`[data-group="${grp}"]`).forEach(b => b.classList.remove('sel'));
+
   if (alreadySelected) {
     sel[grp] = '';
   } else {
@@ -2018,9 +1966,13 @@ function selectOptStep(btn, grp, stepId) {
   touchDT();
   updateTagsBtnIndicator();
 
-  // الانتقال التلقائي للخطوة التالية بعد تحديد الوسم
   if (!alreadySelected && sel[grp] !== '') {
-    setTimeout(() => tagsStepNext(), 250);
+    if (grp === 'ctype') {
+      tagsStepNext();
+      renderTagsStep();
+    } else {
+      setTimeout(() => tagsStepNext(), 250);
+    }
   }
 }
 
@@ -2048,7 +2000,6 @@ function resetTagsSteps() {
 
 function buildAllTagsHTML() {
   let html = '<div class="trow">';
-  // الفرع
   html +=
     `<div class="tline-label" style="color:#4338ca; border-right: 3px solid #4338ca;">🏢 الفرع</div><div class="tline tl-wide-blue">`;
   S.branches.forEach(item => {
@@ -2057,7 +2008,6 @@ function buildAllTagsHTML() {
       `<button class="ob${isSel?' sel':''}" data-group="branch" data-val="${item}" onclick="selectOptAll(this,'branch')">${S.labels[item]||item}</button>`;
   });
   html += '</div>';
-  // نوع المكالمة
   html +=
     `<div class="tline-label" style="color:#1e293b; border-right: 3px solid #1e293b;">📞 نوع المكالمة</div><div class="tline tl-contrast-dark">`;
   ['استفسار', 'طلب', 'شكوى'].forEach(item => {
@@ -2065,7 +2015,6 @@ function buildAllTagsHTML() {
       `<button class="ob${sel.ctype===item?' sel':''}" data-group="ctype" data-val="${item}" onclick="selectOptAll(this,'ctype')">${item}</button>`;
   });
   html += '</div>';
-  // الموضوع
   html +=
     `<div class="tline-label" style="color:#dc2626; border-right: 3px solid #dc2626;">📋 الموضوع</div><div class="tline tl-outline-red">`;
   const topics = sel.ctype && S.topicMap[sel.ctype] ? S.topicMap[sel.ctype] : [];
@@ -2077,7 +2026,6 @@ function buildAllTagsHTML() {
     });
   } else { html += '<span style="font-size:12px;color:var(--tl2);padding:10px 14px;">اختر نوع المكالمة أولاً</span>'; }
   html += '</div>';
-  // عدد الأطفال
   html +=
     `<div class="tline-label" style="color:#7c3aed; border-right: 3px solid #7c3aed;">👶 عدد الأطفال</div><div class="tline tl-pill-blue">`;
   CHILD_OPTS.forEach(item => {
@@ -2085,7 +2033,6 @@ function buildAllTagsHTML() {
       `<button class="ob${sel.child===item?' sel':''}" data-group="child" data-val="${item}" onclick="selectOptAll(this,'child')">${S.labels[item]||CHILD_LABELS_DEF[item]||item}</button>`;
   });
   html += '</div>';
-  // الموقع
   html +=
     `<div class="tline-label" style="color:#0f766e; border-right: 3px solid #0f766e;">📍 موقع العميل</div><div class="tline tl-teal-text">`;
   S.locs.forEach(item => {
@@ -2093,7 +2040,6 @@ function buildAllTagsHTML() {
       `<button class="ob${sel.loc===item?' sel':''}" data-group="loc" data-val="${item}" onclick="selectOptAll(this,'loc')">${S.labels[item]||item}</button>`;
   });
   html += '</div>';
-  // الجنسية
   html +=
     `<div class="tline-label" style="color:#1d4ed8; border-right: 3px solid #1d4ed8;">🌍 الجنسية (اللكنة)</div><div class="tline tl-solid-blue">`;
   S.nat.forEach(item => {
@@ -2101,7 +2047,6 @@ function buildAllTagsHTML() {
       `<button class="ob${sel.nat===item?' sel':''}" data-group="nat" data-val="${item}" onclick="selectOptAll(this,'nat')">${S.labels[item]||item}</button>`;
   });
   html += '</div>';
-  // نبرة العميل
   html +=
     `<div class="tline-label" style="color:#3730a3; border-right: 3px solid #3730a3;">🎭 نبرة العميل</div><div class="tline tl-bold-indigo">`;
   S.emos.forEach(item => {
@@ -2109,7 +2054,6 @@ function buildAllTagsHTML() {
       `<button class="ob${sel.emo===item?' sel':''}" data-group="emo" data-val="${item}" onclick="selectOptAll(this,'emo')">${S.labels[item]||item}</button>`;
   });
   html += '</div>';
-  // المصدر
   html +=
     `<div class="tline-label" style="color:#b45309; border-right: 3px solid #b45309;">📡 مصدر التواصل</div><div class="tline tl-wide-outline">`;
   S.srcs.forEach(item => {
@@ -2117,7 +2061,6 @@ function buildAllTagsHTML() {
       `<button class="ob${sel.src===item?' sel':''}" data-group="src" data-val="${item}" onclick="selectOptAll(this,'src')">${S.labels[item]||item}</button>`;
   });
   html += '</div>';
-  // الجنس
   html +=
     `<div class="tline-label" style="color:#047857; border-right: 3px solid #047857;">👤 الجنس</div><div class="tline tl-solid-teal">`;
   ['ذكر', 'أنثى'].forEach(item => {
@@ -2608,7 +2551,6 @@ function buildChildDisplay(c) {
   const f = c.gender === 'أنثى';
   const parentLabel = f ? 'أم' : 'أب';
   const childCount = c.child || '';
-  // نعرض childDisplay بدون أسماء (تُحمل لاحقاً)
   if (!childCount) return '';
   return `${parentLabel} ${childCount}`;
 }
@@ -3309,7 +3251,6 @@ async function initApp() {
   try { await initDB(); } catch (e) { console.error('IndexedDB init failed:', e);
     toast('تحذير: قاعدة البيانات المحلية غير متاحة', 'err'); }
 
-  // تحميل الإعدادات من IndexedDB
   await loadSettings();
 
   let localCalls = [];
@@ -3382,3 +3323,4 @@ setTimeout(() => { if (!_initStarted) { _domReady = true;
 </script>
 </body>
 </html>
+```
