@@ -452,7 +452,7 @@ window.buildSeq = function (dt) {
   const d = dt || (window.defaultDate ? new Date(window.defaultDate) : new Date());
   const letter = window.monthLetter(d);
   const day = String(d.getDate()).padStart(2, '0');
-  const num = String(window.dayCallCount(d)).padStart(2, '0');
+  const num = String(window.dayCallCount(d));
   return letter + day + num;
 };
 window.nextSeq = function (dt) { return window.buildSeq(dt); };
