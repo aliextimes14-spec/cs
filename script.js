@@ -647,7 +647,7 @@ window.renderTagsStep = function () {
   if (prevBtn) prevBtn.style.display = window.tagsStepIndex > 0 ? 'inline-block' : 'none';
   if (skipBtn) {
     skipBtn.style.display = 'inline-block';
-    skipBtn.textContent = window.tagsStepIndex >= TAGS_STEPS.length - 1 ? 'إنهاء ←' : 'تخطي ←';
+    skipBtn.textContent = window.tagsStepIndex >= TAGS_STEPS.length - 1 ? 'إنهاء ' : 'التالي ';
   }
   if (stepIndicator) stepIndicator.textContent = `الخطوة ${window.tagsStepIndex + 1} من ${TAGS_STEPS.length}`;
 
