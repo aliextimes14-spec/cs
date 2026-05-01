@@ -370,15 +370,15 @@ const FONT_STEPS = [75, 85, 100, 115, 130];
 
 // TAGS_STEPS — FIX: group for topic is kept as 'topic' but we read/write sel.topics in handlers
 const TAGS_STEPS = [
+   { id: 'gender',  label: '👤 الجنس',              group: 'gender',  items: ['ذكر', 'أنثى'], cssClass: 'tl-solid-teal', color: '#047857' },
   { id: 'branch',  label: '🏢 الفرع',             group: 'branch',  itemsKey: 'branches', cssClass: 'tl-wide-blue',     color: '#4338ca' },
   { id: 'ctype',   label: '📞 نوع المكالمة',       group: 'ctype',   items: ['استفسار', 'طلب', 'شكوى'], cssClass: 'tl-contrast-dark', color: '#1e293b' },
   { id: 'topic',   label: '📋 الموضوع',            group: 'topic',   itemsKey: null,       cssClass: 'tl-outline-red',   color: '#dc2626' },
+  { id: 'nat',     label: '🌍 الجنسية (اللكنة)',   group: 'nat',     itemsKey: 'nat',      cssClass: 'tl-solid-blue',    color: '#1d4ed8' },
   { id: 'child',   label: '👶 عدد الأطفال',        group: 'child',   items: CHILD_OPTS,    cssClass: 'tl-pill-blue',     color: '#7c3aed' },
   { id: 'loc',     label: '📍 موقع العميل',        group: 'loc',     itemsKey: 'locs',     cssClass: 'tl-teal-text',     color: '#0f766e' },
-  { id: 'nat',     label: '🌍 الجنسية (اللكنة)',   group: 'nat',     itemsKey: 'nat',      cssClass: 'tl-solid-blue',    color: '#1d4ed8' },
   { id: 'emo',     label: '🎭 نبرة العميل',        group: 'emo',     itemsKey: 'emos',     cssClass: 'tl-bold-indigo',   color: '#3730a3' },
   { id: 'src',     label: '📡 مصدر التواصل',       group: 'src',     itemsKey: 'srcs',     cssClass: 'tl-wide-outline',  color: '#b45309' },
-  { id: 'gender',  label: '👤 الجنس',              group: 'gender',  items: ['ذكر', 'أنثى'], cssClass: 'tl-solid-teal', color: '#047857' },
 ];
 
 // ===== TOAST =====
