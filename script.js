@@ -1266,8 +1266,8 @@ window.callCard = function (c, nested) {
       <span class="cc-tog" id="tog-${c.seq}" style="font-size:18px;font-weight:300;">＋</span>
     </div>
     <div class="cc-act-row" id="act-${c.seq}" style="display:none;padding:8px 18px;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:#f8fafc;">
-      <button onclick="event.stopPropagation();showPostSaveModalBySeq('${c.seq}')" class="btn-wa">${waSVG} شاعر واتساب</button>
-      <button id="summBtn-${c.seq}" onclick="event.stopPropagation();toggleSummDetail('${c.seq}')" style="color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;background:var(--white);cursor:pointer;margin-bottom:4px;">ملخص</button>
+<button onclick="event.stopPropagation();showPostSaveModalBySeq('${c.seq}')" class="btn-wa" style="background:#128C7E;">${waSVG} واتساب</button>
+<button id="summBtn-${c.seq}" onclick="event.stopPropagation();toggleSummDetail('${c.seq}')" style="color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;background:var(--white);cursor:pointer;margin-bottom:4px;">ملخص</button>
       <button onclick="event.stopPropagation();editCall('${c.seq}')" style="color:var(--t2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;background:var(--white);cursor:pointer;margin-bottom:4px;">تعديل</button>
       <button onclick="event.stopPropagation();deleteCall('${c.seq}')" style="color:var(--red);border:1px solid var(--rl);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;background:var(--white);cursor:pointer;margin-bottom:4px;margin-right:auto;">حذف</button>
       <button id="copy-${c.seq}" onclick="event.stopPropagation();copySumm('${c.seq}')" style="display:none;color:var(--purple);border:1px solid var(--pl);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;background:var(--white);cursor:pointer;margin-bottom:4px;">نسخ</button>
